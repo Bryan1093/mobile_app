@@ -1,0 +1,75 @@
+# ==============================================================================
+# PROYECTO DE TITULACIÓN - INNOVA FISIOTERAPIA (UCE)
+# .gitignore Oficial para React Native con Expo & TypeScript
+# ==============================================================================
+
+# 1. Dependencias de Node (Obligatorio ignorar por peso y portabilidad)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# 2. Cachés y temporales de Expo & Metro Bundler
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.metro-health-check*
+*.tsbuildinfo
+.eslintcache
+
+# 3. Carpetas nativas generadas (EAS Build / prebuild)
+/android
+/ios
+*.orig.*
+.kotlin/
+.gradle/
+build/
+
+# 4. Binarios compilados de instalación móvil
+*.apk
+*.aab
+*.ipa
+
+# 5. Certificados, llaves criptográficas y firmas (Seguridad LOPDP)
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+
+# 6. Variables de Entorno locales (Seguridad de credenciales)
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+
+# 7. Carpetas de entornos de desarrollo / IDEs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 8. Archivos de sistema operativo
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# 9. Metadatos de Agentes y Herramientas Locales
+.agents/
+.gemini/

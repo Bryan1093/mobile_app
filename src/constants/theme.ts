@@ -1,0 +1,48 @@
+export const THEME = {
+  colors: {
+    background: '#F8FAFC',
+    surface: '#FFFFFF',
+    // Verde Corporativo Oficial de Innova Fisioterapia
+    primary: '#1B6B53',
+    primaryDark: '#145340',
+    primaryDarker: '#0B382B',
+    primaryLight: '#E8F5F1',
+    primaryHover: '#228567',
+    primaryBorder: '#A7D7C8',
+    textPrimary: '#0F2820',
+    textSecondary: '#5A6872',
+    textMuted: '#94A3B8',
+    border: '#E2E8F0',
+    borderLight: '#F1F5F9',
+    success: '#10B981',
+    successLight: '#ECFDF5',
+    warning: '#F59E0B',
+    warningLight: '#FFFBEB',
+    danger: '#EF4444',
+    dangerLight: '#FEF2F2',
+    divider: '#E2E8F0',
+    cardShadow: 'rgba(20, 83, 64, 0.08)',
+  },
+  borderRadius: {
+    sm: 8,
+    md: 12,
+    lg: 16,
+    full: 9999,
+  },
+  shadows: {
+    card: {
+      shadowColor: '#145340',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.07,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    modal: {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 16,
+      elevation: 8,
+    },
+  },
+};
