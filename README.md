@@ -82,19 +82,25 @@ app_mobil/
 
 ## 🚀 Cómo Ejecutar la Aplicación
 
-1. Abre una terminal en esta carpeta:
+Para una guía paso a paso completa sobre cómo clonar y correr el proyecto en otra PC o laptop, consulta el documento:
+👉 **[GUIA_INSTALACION.md](./GUIA_INSTALACION.md)**
+
+### Pasos rápidos:
+1. Clonar e instalar dependencias:
    ```bash
-   cd C:\Users\BIBLIOTECA-PC-04\Documents\app_mobil
+   git clone https://github.com/Bryan1093/mobile_app.git
+   cd mobile_app
+   npm install
    ```
 
-2. Inicia el servidor de desarrollo Expo:
+2. Iniciar el servidor de desarrollo Expo:
    ```bash
-   npm start
+   npx expo start
    ```
 
 3. **Para probar en tu teléfono celular (Android o iPhone)**:
    - Descarga la app gratuita **Expo Go** desde Google Play Store o App Store.
-   - Asegúrate de que tu celular esté conectado a la misma red WiFi que la computadora (o en modo túnel).
+   - Asegúrate de que tu celular esté conectado a la misma red WiFi que la computadora (o ejecuta `npx expo start --tunnel`).
    - Escanea el código QR que aparecerá en la terminal con la cámara (iOS) o desde Expo Go (Android).
 
 4. **Para probar en la computadora (Navegador Web)**:
