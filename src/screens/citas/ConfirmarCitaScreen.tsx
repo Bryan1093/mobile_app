@@ -32,13 +32,36 @@ export const ConfirmarCitaScreen: React.FC = () => {
   const { usuario } = useAuth();
   const { agendarCita, conflictModalVisible, setConflictModalVisible } = useAppointments();
   const [procesando, setProcesando] = useState(false);
+  const [hasConfirmed, setHasConfirmed] = useState(false);
   const [modalExitoVisible, setModalExitoVisible] = useState(false);
 
   // Formato de fecha dd/mm/yyyy
   const [ano, mes, dia] = fecha.split('-');
   const fechaFormateada = `${dia}/${mes}/${ano}`;
 
+  const handleIrAMisCitas = () => {
+    setModalExitoVisible(false);
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'MisCitas' }],
+    });
+  };
+
+  const handleIrAInicio = () => {
+    setModalExitoVisible(false);
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'MisCitas' }],
+    });
+    const parent = navigation.getParent();
+    if (parent) {
+      parent.navigate('InicioTab');
+    }
+  };
+
   const handleConfirmar = async () => {
+    if (procesando || hasConfirmed) return;
+
     if (!usuario) {
       Alert.alert('Sesión requerida', 'Debes iniciar sesión para confirmar tu turno.');
       return;
@@ -56,6 +79,7 @@ export const ConfirmarCitaScreen: React.FC = () => {
       });
 
       if (resultado.success) {
+        setHasConfirmed(true);
         setModalExitoVisible(true);
       }
     } catch {
@@ -77,7 +101,13 @@ export const ConfirmarCitaScreen: React.FC = () => {
         ]}
       >
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            if (hasConfirmed) {
+              handleIrAMisCitas();
+            } else {
+              navigation.goBack();
+            }
+          }}
           style={styles.btnAtras}
           activeOpacity={0.7}
         >
@@ -171,13 +201,18 @@ export const ConfirmarCitaScreen: React.FC = () => {
       <View style={styles.footerFixed}>
         <PressableScale
           onPress={handleConfirmar}
-          disabled={procesando}
+          disabled={procesando || hasConfirmed}
           hapticStyle="success"
           style={styles.btnConfirmarWrapper}
         >
-          <View style={[styles.btnConfirmar, procesando && styles.btnDisabled]}>
+          <View style={[styles.btnConfirmar, (procesando || hasConfirmed) && styles.btnDisabled]}>
             {procesando ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : hasConfirmed ? (
+              <View style={styles.btnConfirmadoRow}>
+                <MaterialIcons name="check" size={20} color="#FFFFFF" />
+                <Text style={styles.btnConfirmarText}>Cita Confirmada</Text>
+              </View>
             ) : (
               <Text style={styles.btnConfirmarText}>Confirmar Cita</Text>
             )}
@@ -205,19 +240,8 @@ export const ConfirmarCitaScreen: React.FC = () => {
           sede: SEDE_UNICA,
           precio: PRECIO_SESION,
         }}
-        onVerCitas={() => {
-          setModalExitoVisible(false);
-          navigation.navigate('MisCitas');
-        }}
-        onVolverInicio={() => {
-          setModalExitoVisible(false);
-          const parent = navigation.getParent();
-          if (parent) {
-            parent.navigate('InicioTab');
-          } else {
-            navigation.navigate('MisCitas');
-          }
-        }}
+        onVerCitas={handleIrAMisCitas}
+        onVolverInicio={handleIrAInicio}
       />
     </SafeAreaView>
   );
@@ -410,5 +434,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '800',
+  },
+  btnConfirmadoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
 });

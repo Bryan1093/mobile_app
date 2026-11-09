@@ -112,7 +112,13 @@ export const SuccessBookingModal: React.FC<SuccessBookingModalProps> = ({
   if (!visible || !data) return null;
 
   return (
-    <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={onVerCitas}
+    >
       <View style={styles.overlay}>
         {/* Fondo semi-transparente con fade animado */}
         <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]} />
@@ -128,8 +134,9 @@ export const SuccessBookingModal: React.FC<SuccessBookingModalProps> = ({
           ]}
         >
           <ScrollView
-            bounces={false}
-            showsVerticalScrollIndicator={false}
+            style={styles.scrollView}
+            bounces={true}
+            showsVerticalScrollIndicator={true}
             contentContainerStyle={styles.cardContent}
           >
             {/* Animación del Checkmark Circular Verde Esmeralda */}
@@ -155,7 +162,7 @@ export const SuccessBookingModal: React.FC<SuccessBookingModalProps> = ({
                   },
                 ]}
               >
-                <MaterialIcons name="check" size={44} color="#FFFFFF" />
+                <MaterialIcons name="check" size={36} color="#FFFFFF" />
               </Animated.View>
             </View>
 
@@ -275,8 +282,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 36,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
   },
   backdrop: {
     position: 'absolute',
@@ -289,55 +296,61 @@ const styles = StyleSheet.create({
   cardModal: {
     width: '100%',
     maxWidth: 400,
-    maxHeight: '90%',
+    maxHeight: '85%',
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     overflow: 'hidden',
     ...THEME.shadows.modal,
   },
+  scrollView: {
+    width: '100%',
+    flexGrow: 0,
+  },
   cardContent: {
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 24,
     alignItems: 'center',
   },
   checkmarkWrapper: {
-    width: 88,
-    height: 88,
+    width: 72,
+    height: 72,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-    marginTop: 8,
+    marginBottom: 10,
+    marginTop: 4,
   },
   pulseRing: {
     position: 'absolute',
-    width: 84,
-    height: 84,
-    borderRadius: 42,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     borderWidth: 3,
     borderColor: THEME.colors.primary,
     backgroundColor: THEME.colors.primaryLight,
   },
   checkmarkCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     backgroundColor: THEME.colors.primary, // #1B6B53 Verde esmeralda institucional
     justifyContent: 'center',
     alignItems: 'center',
     ...THEME.shadows.card,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '900',
     color: '#0F2820',
     textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#5A6872',
     textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 20,
+    lineHeight: 16,
+    marginBottom: 14,
     paddingHorizontal: 8,
   },
   summaryContainer: {
@@ -346,8 +359,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    padding: 14,
-    marginBottom: 14,
+    padding: 12,
+    marginBottom: 10,
   },
   summaryHeader: {
     flexDirection: 'row',
@@ -400,11 +413,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     backgroundColor: '#E8F5F1',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
     borderRadius: 8,
     width: '100%',
-    marginBottom: 20,
+    marginBottom: 14,
   },
   securityNoteText: {
     fontSize: 11,
@@ -414,14 +427,14 @@ const styles = StyleSheet.create({
   },
   actionsContainer: {
     width: '100%',
-    gap: 10,
+    gap: 8,
   },
   primaryBtnWrapper: {
     width: '100%',
   },
   primaryBtn: {
     backgroundColor: THEME.colors.primary,
-    height: 48,
+    height: 46,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -438,7 +451,7 @@ const styles = StyleSheet.create({
   },
   secondaryBtn: {
     backgroundColor: '#F1F5F9',
-    height: 46,
+    height: 44,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',

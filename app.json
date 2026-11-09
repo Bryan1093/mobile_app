@@ -25,7 +25,14 @@
       "expo-secure-store",
       "expo-sharing",
       "expo-web-browser",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#1B6B53"
+        }
+      ]
     ]
   }
 }

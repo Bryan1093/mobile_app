@@ -53,6 +53,21 @@ export class MockAppointmentRepository implements IAppointmentRepository {
       );
     }
 
+    // PROTECCIÓN CONTRA DUPLICIDAD / COLISIÓN CONCURRENTE:
+    // Si ya existe una cita programada para el mismo fisioterapeuta, fecha y hora de inicio
+    const yaExiste = this.citas.some(
+      (c) =>
+        c.fisioterapeutaId === dto.fisioterapeutaId &&
+        c.fecha === dto.fecha &&
+        c.horaInicio === dto.horaInicio &&
+        c.estado === 'PROGRAMADA'
+    );
+    if (yaExiste) {
+      throw new ConflictError(
+        'Este turno ya ha sido reservado. Por favor, selecciona otro horario disponible.'
+      );
+    }
+
     const nuevaCita: Cita = {
       id: `cita-${Date.now().toString().slice(-4)}`,
       pacienteId: dto.pacienteId,
