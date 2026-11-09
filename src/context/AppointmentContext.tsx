@@ -19,6 +19,7 @@ interface AppointmentContextType {
   documentos: DocumentoClinico[];
   notificaciones: Notificacion[];
   registrosEVA: RegistroEva[];
+  cargando: boolean;
   conflictModalVisible: boolean;
   setConflictModalVisible: (val: boolean) => void;
   agendarCita: (params: ReservaParams) => Promise<{ success: boolean; errorConflict?: boolean }>;
@@ -36,11 +37,13 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [documentos, setDocumentos] = useState<DocumentoClinico[]>([]);
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [registrosEVA, setRegistrosEVA] = useState<RegistroEva[]>([]);
+  const [cargando, setCargando] = useState<boolean>(true);
   const [conflictModalVisible, setConflictModalVisible] = useState<boolean>(false);
 
   const contadorNotificacionesNoLeidas = notificaciones.filter((n) => !n.leida).length;
 
   const recargarDatos = async () => {
+    setCargando(true);
     try {
       const [citasRes, docRes, notifRes, evaRes] = await Promise.all([
         appointmentRepository.getMisCitas(),
@@ -54,6 +57,8 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setRegistrosEVA(evaRes);
     } catch (err) {
       console.warn('[AppointmentContext] Error cargando datos de repositorios:', err);
+    } finally {
+      setCargando(false);
     }
   };
 
@@ -76,6 +81,10 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         }
       } catch (err) {
         console.warn('[AppointmentContext] Error inicial:', err);
+      } finally {
+        if (isMounted) {
+          setCargando(false);
+        }
       }
     };
 
@@ -177,6 +186,7 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         documentos,
         notificaciones,
         registrosEVA,
+        cargando,
         conflictModalVisible,
         setConflictModalVisible,
         agendarCita,

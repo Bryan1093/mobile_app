@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CitaCard } from '../../components/CitaCard';
 import { PressableScale } from '../../components/PressableScale';
+import { CitaCardSkeleton } from '../../components/SkeletonLoader';
 import { THEME } from '../../constants/theme';
 import { useAppointments } from '../../context/AppointmentContext';
 import { Cita } from '../../types';
@@ -23,7 +24,7 @@ import { Cita } from '../../types';
 export const MisCitasScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
-  const { citas, cancelarCita } = useAppointments();
+  const { citas, cancelarCita, cargando } = useAppointments();
 
   // Modal para ver lista de citas (Próximas o Historial)
   const [modalListaVisible, setModalListaVisible] = useState(false);
@@ -197,26 +198,33 @@ export const MisCitasScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            <FlatList
-              data={citasFiltradas}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={{ padding: 16 }}
-              renderItem={({ item }) => (
-                <CitaCard
-                  cita={item}
-                  onCancelar={cancelarCita}
-                  onReagendar={handleReagendar}
-                />
-              )}
-              ListEmptyComponent={
-                <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                  <MaterialIcons name="event-busy" size={48} color={THEME.colors.textMuted} />
-                  <Text style={{ marginTop: 8, color: THEME.colors.textMuted, fontSize: 14 }}>
-                    No tienes citas en esta lista.
-                  </Text>
-                </View>
-              }
-            />
+            {cargando ? (
+              <View style={{ padding: 16 }}>
+                <CitaCardSkeleton />
+                <CitaCardSkeleton />
+              </View>
+            ) : (
+              <FlatList
+                data={citasFiltradas}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={{ padding: 16 }}
+                renderItem={({ item }) => (
+                  <CitaCard
+                    cita={item}
+                    onCancelar={cancelarCita}
+                    onReagendar={handleReagendar}
+                  />
+                )}
+                ListEmptyComponent={
+                  <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                    <MaterialIcons name="event-busy" size={48} color={THEME.colors.textMuted} />
+                    <Text style={{ marginTop: 8, color: THEME.colors.textMuted, fontSize: 14 }}>
+                      No tienes citas en esta lista.
+                    </Text>
+                  </View>
+                }
+              />
+            )}
           </View>
         </View>
       </Modal>

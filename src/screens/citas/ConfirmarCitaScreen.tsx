@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConflictModal } from '../../components/ConflictModal';
 import { PressableScale } from '../../components/PressableScale';
+import { SuccessBookingModal } from '../../components/SuccessBookingModal';
 import { THEME } from '../../constants/theme';
 import { useAppointments } from '../../context/AppointmentContext';
 import { useAuth } from '../../context/AuthContext';
@@ -31,6 +32,7 @@ export const ConfirmarCitaScreen: React.FC = () => {
   const { usuario } = useAuth();
   const { agendarCita, conflictModalVisible, setConflictModalVisible } = useAppointments();
   const [procesando, setProcesando] = useState(false);
+  const [modalExitoVisible, setModalExitoVisible] = useState(false);
 
   // Formato de fecha dd/mm/yyyy
   const [ano, mes, dia] = fecha.split('-');
@@ -54,16 +56,7 @@ export const ConfirmarCitaScreen: React.FC = () => {
       });
 
       if (resultado.success) {
-        Alert.alert(
-          '¡Cita Agendada Exitosamente!',
-          `Tu turno para ${especialidad.nombre} ha sido reservado para el ${fechaFormateada} de ${bloqueHorario.horaInicio} a ${bloqueHorario.horaFin} en ${SEDE_UNICA}.`,
-          [
-            {
-              text: 'Ver mis citas',
-              onPress: () => navigation.navigate('MisCitas'),
-            },
-          ]
-        );
+        setModalExitoVisible(true);
       }
     } catch {
       Alert.alert('Error', 'No se pudo procesar la solicitud.');
@@ -198,6 +191,32 @@ export const ConfirmarCitaScreen: React.FC = () => {
         onClose={() => {
           setConflictModalVisible(false);
           navigation.goBack();
+        }}
+      />
+
+      {/* Modal de Éxito con Micro-animación Profesional */}
+      <SuccessBookingModal
+        visible={modalExitoVisible}
+        data={{
+          fisioterapeuta: `Lcdo. ${fisioterapeuta.nombres} ${fisioterapeuta.apellidos}`,
+          especialidad: especialidad.nombre,
+          fechaTexto: fechaFormateada,
+          horario: `${bloqueHorario.horaInicio} - ${bloqueHorario.horaFin}`,
+          sede: SEDE_UNICA,
+          precio: PRECIO_SESION,
+        }}
+        onVerCitas={() => {
+          setModalExitoVisible(false);
+          navigation.navigate('MisCitas');
+        }}
+        onVolverInicio={() => {
+          setModalExitoVisible(false);
+          const parent = navigation.getParent();
+          if (parent) {
+            parent.navigate('InicioTab');
+          } else {
+            navigation.navigate('MisCitas');
+          }
         }}
       />
     </SafeAreaView>

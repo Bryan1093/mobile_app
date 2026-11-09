@@ -12,12 +12,14 @@ import {
 import { THEME } from '../constants/theme';
 import { Fisioterapeuta } from '../types';
 import { PressableScale } from './PressableScale';
+import { BloqueHorarioSkeleton } from './SkeletonLoader';
 
 interface HorariosModalProps {
   visible: boolean;
   fisioterapeuta: Fisioterapeuta | null;
   fechaTexto: string;
   bloques: { id: string; horaInicio: string; horaFin: string }[];
+  isLoading?: boolean;
   onSeleccionarBloque: (bloque: { id: string; horaInicio: string; horaFin: string }) => void;
   onClose: () => void;
 }
@@ -27,6 +29,7 @@ export const HorariosModal: React.FC<HorariosModalProps> = ({
   fisioterapeuta,
   fechaTexto,
   bloques,
+  isLoading = false,
   onSeleccionarBloque,
   onClose,
 }) => {
@@ -67,47 +70,62 @@ export const HorariosModal: React.FC<HorariosModalProps> = ({
           <View style={styles.subHeaderRow}>
             <Text style={styles.subHeaderTitle}>Turnos de 60 minutos disponibles:</Text>
             <View style={styles.totalBadge}>
-              <Text style={styles.totalBadgeText}>{bloques.length} libres</Text>
+              <Text style={styles.totalBadgeText}>
+                {isLoading ? '...' : `${bloques.length} libres`}
+              </Text>
             </View>
           </View>
 
-          {/* Lista de Bloques con Scroll Suave */}
-          <FlatList
-            data={bloques}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContainer}
-            numColumns={2}
-            columnWrapperStyle={styles.columnWrapper}
-            renderItem={({ item }) => (
-              <PressableScale
-                onPress={() => onSeleccionarBloque(item)}
-                hapticStyle="medium"
-                style={styles.slotCardWrapper}
-              >
-                <View style={styles.slotCard}>
-                  <View style={styles.slotTopRow}>
-                    <MaterialIcons name="schedule" size={17} color={THEME.colors.primary} />
-                    <View style={styles.greenBadge}>
-                      <View style={styles.greenDot} />
-                      <Text style={styles.greenBadgeText}>Libre</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.slotTimeText}>
-                    {item.horaInicio} - {item.horaFin}
-                  </Text>
-                  <Text style={styles.slotSubtext}>Atención 1 a 1</Text>
-                </View>
-              </PressableScale>
-            )}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <MaterialIcons name="event-busy" size={44} color={THEME.colors.textMuted} />
-                <Text style={styles.emptyText}>
-                  No hay turnos libres para esta fecha con este especialista.
-                </Text>
+          {/* Lista de Bloques con Placeholder Skeleton o Scroll Suave */}
+          {isLoading ? (
+            <View style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
+              <View style={styles.columnWrapper}>
+                <BloqueHorarioSkeleton />
+                <BloqueHorarioSkeleton />
               </View>
-            }
-          />
+              <View style={styles.columnWrapper}>
+                <BloqueHorarioSkeleton />
+                <BloqueHorarioSkeleton />
+              </View>
+            </View>
+          ) : (
+            <FlatList
+              data={bloques}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.listContainer}
+              numColumns={2}
+              columnWrapperStyle={styles.columnWrapper}
+              renderItem={({ item }) => (
+                <PressableScale
+                  onPress={() => onSeleccionarBloque(item)}
+                  hapticStyle="medium"
+                  style={styles.slotCardWrapper}
+                >
+                  <View style={styles.slotCard}>
+                    <View style={styles.slotTopRow}>
+                      <MaterialIcons name="schedule" size={17} color={THEME.colors.primary} />
+                      <View style={styles.greenBadge}>
+                        <View style={styles.greenDot} />
+                        <Text style={styles.greenBadgeText}>Libre</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.slotTimeText}>
+                      {item.horaInicio} - {item.horaFin}
+                    </Text>
+                    <Text style={styles.slotSubtext}>Atención 1 a 1</Text>
+                  </View>
+                </PressableScale>
+              )}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <MaterialIcons name="event-busy" size={44} color={THEME.colors.textMuted} />
+                  <Text style={styles.emptyText}>
+                    No hay turnos libres para esta fecha con este especialista.
+                  </Text>
+                </View>
+              }
+            />
+          )}
 
           {/* Pie informativo LOPDP y Concurrencia */}
           <View style={styles.footerNote}>

@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { triggerHaptic } from '../utils/haptics';
 import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '../constants/theme';
 import { CuentaScreen } from '../screens/cuenta/CuentaScreen';
 import { InicioScreen } from '../screens/home/InicioScreen';
@@ -13,13 +14,25 @@ import { CitasStackNavigator } from './CitasStackNavigator';
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export const BottomTabNavigator: React.FC = () => {
+  const insets = useSafeAreaInsets();
+
+  // Asegura espacio respirable y ergonómico sin cortar etiquetas en Android (gesture bar) ni iOS
+  const bottomPadding = Math.max(insets.bottom, Platform.OS === 'ios' ? 22 : 12);
+  const barHeight = (Platform.OS === 'ios' ? 62 : 64) + bottomPadding;
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: THEME.colors.primary,
         tabBarInactiveTintColor: '#64748B',
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            height: barHeight,
+            paddingBottom: bottomPadding,
+          },
+        ],
         tabBarLabelStyle: styles.tabBarLabel,
         tabBarHideOnKeyboard: true,
       }}
@@ -93,26 +106,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopColor: '#E2E8F0',
     borderTopWidth: 1,
-    height: Platform.OS === 'ios' ? 88 : 66,
-    paddingBottom: Platform.OS === 'ios' ? 28 : 10,
     paddingTop: 8,
     ...THEME.shadows.card,
   },
   tabBarLabel: {
     fontSize: 11,
     fontWeight: '700',
-    marginTop: 2,
+    marginTop: 3,
+    marginBottom: 2,
+    includeFontPadding: false,
   },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 30,
+    height: 28,
   },
   activeDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
     backgroundColor: THEME.colors.primary,
-    marginTop: 3,
+    marginTop: 2,
   },
 });

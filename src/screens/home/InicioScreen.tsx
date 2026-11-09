@@ -31,6 +31,7 @@ export const InicioScreen: React.FC = () => {
     notificaciones,
     contadorNotificacionesNoLeidas,
     marcarNotificacionesLeidas,
+    agregarRegistroEVA,
     recargarDatos,
   } = useAppointments();
 
@@ -191,8 +192,17 @@ export const InicioScreen: React.FC = () => {
           </PressableScale>
         </View>
 
-        {/* Componente Escala Visual Análoga (EVA) de dolor con respuesta háptica */}
-        <EvaScaleCard registros={registrosEVA} />
+        {/* Componente Escala Visual Análoga (EVA) de dolor con respuesta háptica e interpolación */}
+        <EvaScaleCard
+          registros={registrosEVA}
+          onRegistrarDolor={(nivel) =>
+            agregarRegistroEVA(
+              nivel,
+              'Evaluación ambulatoria',
+              'Registro interactivo por escala EVA en app'
+            )
+          }
+        />
 
         {/* Información de la Sede Innova Fisioterapia */}
         <View style={styles.sedeCard}>

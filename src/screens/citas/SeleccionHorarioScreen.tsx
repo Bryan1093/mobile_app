@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HorariosModal } from '../../components/HorariosModal';
 import { PressableScale } from '../../components/PressableScale';
+import { FisioterapeutaCardSkeleton } from '../../components/SkeletonLoader';
 import { THEME } from '../../constants/theme';
 import {
   ESPECIALIDADES_MOCK,
@@ -31,7 +32,7 @@ export const SeleccionHorarioScreen: React.FC = () => {
   const route = useRoute<RouteProp<CitasStackParamList, 'SeleccionHorario'>>();
 
   const { data: especialidadesData } = useEspecialidades();
-  const { data: fisioterapeutasData } = useFisioterapeutas();
+  const { data: fisioterapeutasData, isLoading: loadingFisio } = useFisioterapeutas();
 
   const especialidades = especialidadesData && especialidadesData.length > 0 ? especialidadesData : ESPECIALIDADES_MOCK;
   const fisioterapeutas = fisioterapeutasData && fisioterapeutasData.length > 0 ? fisioterapeutasData : FISIOTERAPEUTAS_MOCK;
@@ -236,7 +237,13 @@ export const SeleccionHorarioScreen: React.FC = () => {
 
         {/* Lista de Fisioterapeutas con el patrón de MiVeris */}
         <View style={styles.doctorsListSection}>
-          {fisioterapeutasFiltrados.map((fisio) => {
+          {loadingFisio && !fisioterapeutasData ? (
+            <>
+              <FisioterapeutaCardSkeleton />
+              <FisioterapeutaCardSkeleton />
+            </>
+          ) : (
+            fisioterapeutasFiltrados.map((fisio) => {
             const espPrincipal =
               especialidades.find((e) => fisio.especialidadesIds.includes(e.id))?.nombre ||
               'Fisioterapia Integral';
@@ -296,7 +303,7 @@ export const SeleccionHorarioScreen: React.FC = () => {
                 </View>
               </View>
             );
-          })}
+          }))}
         </View>
       </ScrollView>
 
