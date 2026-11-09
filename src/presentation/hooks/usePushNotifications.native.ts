@@ -1,8 +1,8 @@
 import * as Notifications from 'expo-notifications';
 import { useEffect, useRef, useState } from 'react';
-import { Notificacion } from '../../core/domain';
 import { useAppointments } from '../../context/AppointmentContext';
 import { useAuth } from '../../context/AuthContext';
+import { Notificacion } from '../../core/domain';
 import { notificationRepository } from '../../infrastructure/container';
 import { navigate } from '../../navigation/navigationRef';
 import {
@@ -19,7 +19,7 @@ export interface UsePushNotificationsResult {
 }
 
 /**
- * Hook personalizado para orquestar el ciclo de vida de Notificaciones Push:
+ * Hook personalizado para orquestar el ciclo de vida de Notificaciones Push en plataformas nativas:
  * 1. Solicita permisos y registra el token push en el backend vía Clean Architecture.
  * 2. Recibe notificaciones en primer plano y las agrega a la bandeja in-app (NotificationsModal).
  * 3. Gestiona el deep-linking cuando el paciente presiona un banner push (abre la cita médica).
