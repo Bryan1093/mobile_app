@@ -11,7 +11,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,6 +31,7 @@ export const InicioScreen: React.FC = () => {
     notificaciones,
     contadorNotificacionesNoLeidas,
     marcarNotificacionesLeidas,
+    recargarDatos,
   } = useAppointments();
 
   const [modalNotifVisible, setModalNotifVisible] = useState(false);
@@ -40,9 +40,13 @@ export const InicioScreen: React.FC = () => {
   // Próxima cita activa
   const proximaCita = citas.find((c) => c.estado === 'PROGRAMADA');
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 600);
+    try {
+      await recargarDatos();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleAbrirNotificaciones = () => {

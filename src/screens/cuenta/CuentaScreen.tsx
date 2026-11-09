@@ -20,14 +20,27 @@ import { useAuth } from '../../context/AuthContext';
 import {
   DIRECCION_SEDE,
   GOOGLE_MAPS_SEDE_URL,
-  SEDE_UNICA,
 } from '../../data/mockData';
+import { DataSourceType, container } from '../../infrastructure/container';
 
 export const CuentaScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { usuario, logout } = useAuth();
   const [modalLOPDPVisible, setModalLOPDPVisible] = useState(false);
   const [modalSedeVisible, setModalSedeVisible] = useState(false);
+  const [dataSource, setDataSourceState] = useState<DataSourceType>(container.dataSource);
+
+  const handleCambiarOrigenDatos = () => {
+    const next: DataSourceType = dataSource === 'mock' ? 'api' : 'mock';
+    container.setDataSource(next);
+    setDataSourceState(next);
+    Alert.alert(
+      'Fuente de Datos Conmutada',
+      next === 'api'
+        ? 'Modo HTTP API activado: la app consume los endpoints Axios (/turnos, /citas, /auth) para Node.js + PostgreSQL.'
+        : 'Modo MOCK activado: la app consume datos locales estables para la defensa offline.'
+    );
+  };
 
   const handleCerrarSesion = () => {
     Alert.alert(
@@ -136,6 +149,26 @@ export const CuentaScreen: React.FC = () => {
                 <Text style={styles.menuSub}>Consentimiento informado y cifrado AES-256</Text>
               </View>
               <MaterialIcons name="chevron-right" size={22} color="#94A3B8" />
+            </View>
+          </PressableScale>
+
+          <View style={styles.divider} />
+
+          {/* Conmutador de Origen de Datos (Clean Architecture) */}
+          <PressableScale onPress={handleCambiarOrigenDatos} hapticStyle="medium">
+            <View style={styles.menuItem}>
+              <View style={styles.menuIconBox}>
+                <MaterialIcons name="settings-ethernet" size={24} color={THEME.colors.primary} />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <Text style={styles.menuTitle}>Fuente de Datos (Clean Architecture)</Text>
+                <Text style={styles.menuSub}>
+                  {dataSource === 'api'
+                    ? 'Modo HTTP API (Node.js + PostgreSQL)'
+                    : 'Modo MOCK (Offline Tesis)'}
+                </Text>
+              </View>
+              <MaterialIcons name="swap-horiz" size={22} color={THEME.colors.primary} />
             </View>
           </PressableScale>
 

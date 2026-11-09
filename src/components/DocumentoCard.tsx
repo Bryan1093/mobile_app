@@ -30,7 +30,7 @@ export const DocumentoCard: React.FC<DocumentoCardProps> = ({ documento }) => {
       setCargando(true);
       // Abre el PDF en el visor nativo / navegador seguro
       await WebBrowser.openBrowserAsync(documento.archivoUrl);
-    } catch (e) {
+    } catch {
       Alert.alert('Error', 'No se pudo abrir el documento PDF.');
     } finally {
       setCargando(false);

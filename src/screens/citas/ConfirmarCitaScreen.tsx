@@ -65,7 +65,7 @@ export const ConfirmarCitaScreen: React.FC = () => {
           ]
         );
       }
-    } catch (e) {
+    } catch {
       Alert.alert('Error', 'No se pudo procesar la solicitud.');
     } finally {
       setProcesando(false);

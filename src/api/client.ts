@@ -1,12 +1,14 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios, { InternalAxiosRequestConfig, isAxiosError } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 const JWT_KEY = 'INNOVA_AUTH_TOKEN_JWT';
 
 // URL del backend Node.js (se puede configurar mediante variable de entorno o IP local para pruebas en red)
-export const API_BASE_URL = 'http://192.168.100.10:3000/api';
+export const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL || 'http://192.168.100.10:3000/api';
 
+// eslint-disable-next-line import/no-named-as-default-member
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 12000,
@@ -64,9 +66,8 @@ export async function getAuthToken(): Promise<string | null> {
 }
 
 export function isConflictError(error: unknown): boolean {
-  if (axios.isAxiosError(error)) {
+  if (isAxiosError(error)) {
     return error.response?.status === 409;
   }
   return false;
 }
-

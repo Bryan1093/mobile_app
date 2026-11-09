@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { THEME } from '../constants/theme';
-import { BloqueHorario, Fisioterapeuta } from '../types';
+import { Fisioterapeuta } from '../types';
 import { PressableScale } from './PressableScale';
 
 interface HorariosModalProps {

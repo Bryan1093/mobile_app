@@ -39,7 +39,7 @@ export const MisDocumentosScreen: React.FC = () => {
   const handleAbrirPDF = async (doc: DocumentoMedico) => {
     try {
       await WebBrowser.openBrowserAsync(doc.archivoUrl);
-    } catch (e) {
+    } catch {
       Alert.alert('Error', 'No se pudo abrir el documento PDF.');
     }
   };

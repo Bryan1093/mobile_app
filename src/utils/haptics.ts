@@ -36,7 +36,7 @@ export async function triggerHaptic(style: 'light' | 'medium' | 'heavy' | 'selec
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       }
     }
-  } catch (err) {
+  } catch {
     // Silenciar cualquier incompatibilidad de hardware nativo
   }
 }

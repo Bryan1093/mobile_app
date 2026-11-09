@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useState } from 'react';
 import { Animated, Pressable, StyleProp, ViewStyle } from 'react-native';
 import { triggerHaptic } from '../utils/haptics';
 
@@ -23,7 +23,7 @@ export const PressableScale: React.FC<PressableScaleProps> = ({
   hapticStyle = 'light',
   disabled = false,
 }) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const [scaleAnim] = useState(() => new Animated.Value(1));
 
   const handlePressIn = () => {
     if (disabled) return;

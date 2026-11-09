@@ -19,7 +19,7 @@ export const CitaCard: React.FC<CitaCardProps> = ({ cita, onCancelar, onReagenda
     if (cita.documentoPrescripcionUrl) {
       try {
         await WebBrowser.openBrowserAsync(cita.documentoPrescripcionUrl);
-      } catch (e) {
+      } catch {
         Alert.alert('Documento', 'No se pudo abrir el archivo PDF en este momento.');
       }
     } else {

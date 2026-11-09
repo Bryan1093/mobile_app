@@ -1,7 +1,6 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { THEME } from '../constants/theme';
 
 interface BookingStepperProps {
   currentStep: 1 | 2;

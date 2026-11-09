@@ -3,7 +3,6 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import React, { useMemo, useState } from 'react';
 import {
-  FlatList,
   Image,
   Platform,
   SafeAreaView,
@@ -23,12 +22,19 @@ import {
   SEDE_UNICA,
   generarBloquesDisponibles,
 } from '../../data/mockData';
-import { BloqueHorario, CitasStackParamList, Especialidad, Fisioterapeuta } from '../../types';
+import { useEspecialidades, useFisioterapeutas } from '../../presentation/hooks';
+import { BloqueHorario, CitasStackParamList, Fisioterapeuta } from '../../types';
 
 export const SeleccionHorarioScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<CitasStackParamList, 'SeleccionHorario'>>();
+
+  const { data: especialidadesData } = useEspecialidades();
+  const { data: fisioterapeutasData } = useFisioterapeutas();
+
+  const especialidades = especialidadesData && especialidadesData.length > 0 ? especialidadesData : ESPECIALIDADES_MOCK;
+  const fisioterapeutas = fisioterapeutasData && fisioterapeutasData.length > 0 ? fisioterapeutasData : FISIOTERAPEUTAS_MOCK;
 
   // Filtro de Especialidad seleccionado (o 'TODAS')
   const [especialidadFiltro, setEspecialidadFiltro] = useState<string>(() => {
@@ -71,9 +77,9 @@ export const SeleccionHorarioScreen: React.FC = () => {
 
   // Fisioterapeutas filtrados por la especialidad seleccionada
   const fisioterapeutasFiltrados = useMemo(() => {
-    if (especialidadFiltro === 'TODAS') return FISIOTERAPEUTAS_MOCK;
-    return FISIOTERAPEUTAS_MOCK.filter((f) => f.especialidadesIds.includes(especialidadFiltro));
-  }, [especialidadFiltro]);
+    if (especialidadFiltro === 'TODAS') return fisioterapeutas;
+    return fisioterapeutas.filter((f) => f.especialidadesIds.includes(especialidadFiltro));
+  }, [especialidadFiltro, fisioterapeutas]);
 
   // Bloques para el modal del fisioterapeuta activo
   const bloquesDelFisioModal = useMemo(() => {
@@ -87,8 +93,8 @@ export const SeleccionHorarioScreen: React.FC = () => {
     bloque: { id: string; horaInicio: string; horaFin: string }
   ) => {
     const esp =
-      ESPECIALIDADES_MOCK.find((e) => fisio.especialidadesIds.includes(e.id)) ||
-      ESPECIALIDADES_MOCK[0];
+      especialidades.find((e) => fisio.especialidadesIds.includes(e.id)) ||
+      especialidades[0];
 
     const bloqueObj: BloqueHorario = {
       id: bloque.id,
@@ -210,7 +216,7 @@ export const SeleccionHorarioScreen: React.FC = () => {
               </Text>
             </PressableScale>
 
-            {ESPECIALIDADES_MOCK.map((esp) => {
+            {especialidades.map((esp) => {
               const isActivo = especialidadFiltro === esp.id;
               return (
                 <PressableScale
@@ -232,7 +238,7 @@ export const SeleccionHorarioScreen: React.FC = () => {
         <View style={styles.doctorsListSection}>
           {fisioterapeutasFiltrados.map((fisio) => {
             const espPrincipal =
-              ESPECIALIDADES_MOCK.find((e) => fisio.especialidadesIds.includes(e.id))?.nombre ||
+              especialidades.find((e) => fisio.especialidadesIds.includes(e.id))?.nombre ||
               'Fisioterapia Integral';
             const bloques = generarBloquesDisponibles(diaSeleccionado.fechaCompleta, fisio.id);
             const proximoHorario = bloques[0];

@@ -1,27 +1,24 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
-  CITAS_INICIALES_MOCK,
-  DOCUMENTOS_MOCK,
-  EVOLUCION_EVA_MOCK,
-  NOTIFICACIONES_MOCK,
-  SEDE_UNICA,
-} from '../data/mockData';
-import { BloqueHorario, Cita, DocumentoMedico, Especialidad, Fisioterapeuta, Notificacion, RegistroEVA } from '../types';
-
-interface ReservaParams {
-  pacienteId: string;
-  pacienteNombre: string;
-  especialidad: Especialidad;
-  fisioterapeuta: Fisioterapeuta;
-  fecha: string;
-  bloque: BloqueHorario;
-}
+  Cita,
+  ConflictError,
+  DocumentoClinico,
+  Notificacion,
+  RegistroEva,
+  ReservaParams,
+} from '../core/domain';
+import {
+  appointmentRepository,
+  clinicalRepository,
+  documentRepository,
+  notificationRepository,
+} from '../infrastructure/container';
 
 interface AppointmentContextType {
   citas: Cita[];
-  documentos: DocumentoMedico[];
+  documentos: DocumentoClinico[];
   notificaciones: Notificacion[];
-  registrosEVA: RegistroEVA[];
+  registrosEVA: RegistroEva[];
   conflictModalVisible: boolean;
   setConflictModalVisible: (val: boolean) => void;
   agendarCita: (params: ReservaParams) => Promise<{ success: boolean; errorConflict?: boolean }>;
@@ -29,18 +26,65 @@ interface AppointmentContextType {
   marcarNotificacionesLeidas: () => void;
   agregarRegistroEVA: (nivel: number, zona: string, comentario: string) => void;
   contadorNotificacionesNoLeidas: number;
+  recargarDatos: () => Promise<void>;
 }
 
 const AppointmentContext = createContext<AppointmentContextType>({} as AppointmentContextType);
 
 export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [citas, setCitas] = useState<Cita[]>(CITAS_INICIALES_MOCK);
-  const [documentos] = useState<DocumentoMedico[]>(DOCUMENTOS_MOCK);
-  const [notificaciones, setNotificaciones] = useState<Notificacion[]>(NOTIFICACIONES_MOCK);
-  const [registrosEVA, setRegistrosEVA] = useState<RegistroEVA[]>(EVOLUCION_EVA_MOCK);
+  const [citas, setCitas] = useState<Cita[]>([]);
+  const [documentos, setDocumentos] = useState<DocumentoClinico[]>([]);
+  const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
+  const [registrosEVA, setRegistrosEVA] = useState<RegistroEva[]>([]);
   const [conflictModalVisible, setConflictModalVisible] = useState<boolean>(false);
 
   const contadorNotificacionesNoLeidas = notificaciones.filter((n) => !n.leida).length;
+
+  const recargarDatos = async () => {
+    try {
+      const [citasRes, docRes, notifRes, evaRes] = await Promise.all([
+        appointmentRepository.getMisCitas(),
+        documentRepository.getDocumentos(),
+        notificationRepository.getNotificaciones(),
+        clinicalRepository.getHistorialEva(),
+      ]);
+      setCitas(citasRes);
+      setDocumentos(docRes);
+      setNotificaciones(notifRes);
+      setRegistrosEVA(evaRes);
+    } catch (err) {
+      console.warn('[AppointmentContext] Error cargando datos de repositorios:', err);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const cargarInicial = async () => {
+      try {
+        const [citasRes, docRes, notifRes, evaRes] = await Promise.all([
+          appointmentRepository.getMisCitas(),
+          documentRepository.getDocumentos(),
+          notificationRepository.getNotificaciones(),
+          clinicalRepository.getHistorialEva(),
+        ]);
+        if (isMounted) {
+          setCitas(citasRes);
+          setDocumentos(docRes);
+          setNotificaciones(notifRes);
+          setRegistrosEVA(evaRes);
+        }
+      } catch (err) {
+        console.warn('[AppointmentContext] Error inicial:', err);
+      }
+    };
+
+    cargarInicial();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const agendarCita = async ({
     pacienteId,
@@ -50,69 +94,80 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     fecha,
     bloque,
   }: ReservaParams): Promise<{ success: boolean; errorConflict?: boolean }> => {
-    // Simulación de control de concurrencia:
-    // Si la hora es exactamente "08:00" en simulación, disparamos condición de carrera (HTTP 409 Conflict)
-    if (bloque.horaInicio === '08:00') {
-      setConflictModalVisible(true);
-      return { success: false, errorConflict: true };
+    try {
+      const nuevaCita = await appointmentRepository.agendarCita({
+        pacienteId,
+        pacienteNombre,
+        especialidadId: especialidad.id,
+        especialidadNombre: especialidad.nombre,
+        fisioterapeutaId: fisioterapeuta.id,
+        fisioterapeutaNombre: `${fisioterapeuta.nombres} ${fisioterapeuta.apellidos}`,
+        fecha,
+        horaInicio: bloque.horaInicio,
+        horaFin: bloque.horaFin,
+        sede: fisioterapeuta.sede,
+      });
+
+      setCitas((prev) => [nuevaCita, ...prev]);
+
+      // Agregar notificación de confirmación
+      const nuevaNotif: Notificacion = {
+        id: `notif-${Date.now()}`,
+        titulo: 'Cita Agendada Exitosamente',
+        mensaje: `Tu turno para ${especialidad.nombre} ha sido reservado para el ${fecha} de ${bloque.horaInicio} a ${bloque.horaFin}.`,
+        fecha: 'Justo ahora',
+        leida: false,
+        tipo: 'RECORDATORIO_CITA',
+        citaId: nuevaCita.id,
+      };
+      setNotificaciones((prev) => [nuevaNotif, ...prev]);
+
+      return { success: true };
+    } catch (error: any) {
+      if (error instanceof ConflictError || error?.code === 'CONFLICT_409' || error?.statusCode === 409) {
+        setConflictModalVisible(true);
+        return { success: false, errorConflict: true };
+      }
+      console.error('[AppointmentContext] Error al agendar cita:', error);
+      throw error;
     }
-
-    const nuevaCita: Cita = {
-      id: `cita-${Date.now().toString().slice(-4)}`,
-      pacienteId,
-      pacienteNombreCompleto: pacienteNombre,
-      fisioterapeutaId: fisioterapeuta.id,
-      fisioterapeutaNombreCompleto: `Lcdo. ${fisioterapeuta.nombres} ${fisioterapeuta.apellidos}`,
-      especialidadId: especialidad.id,
-      especialidadNombre: especialidad.nombre,
-      sede: SEDE_UNICA,
-      fecha,
-      horaInicio: bloque.horaInicio,
-      horaFin: bloque.horaFin,
-      estado: 'PROGRAMADA',
-      modalidadPago: 'PRESENCIAL_RECEPCION',
-      estadoPago: 'PENDIENTE',
-      createdAt: new Date().toISOString(),
-    };
-
-    setCitas((prev) => [nuevaCita, ...prev]);
-
-    // Agregar notificación de confirmación
-    const nuevaNotif: Notificacion = {
-      id: `notif-${Date.now()}`,
-      titulo: 'Cita Agendada Exitosamente',
-      mensaje: `Tu turno para ${especialidad.nombre} ha sido reservado para el ${fecha} de ${bloque.horaInicio} a ${bloque.horaFin}.`,
-      fecha: 'Justo ahora',
-      leida: false,
-      tipo: 'RECORDATORIO_CITA',
-      citaId: nuevaCita.id,
-    };
-    setNotificaciones((prev) => [nuevaNotif, ...prev]);
-
-    return { success: true };
   };
 
   const cancelarCita = async (citaId: string): Promise<boolean> => {
-    setCitas((prev) =>
-      prev.map((c) => (c.id === citaId ? { ...c, estado: 'CANCELADA' as const } : c))
-    );
-    return true;
+    try {
+      await appointmentRepository.cancelarCita(citaId);
+      setCitas((prev) =>
+        prev.map((c) => (c.id === citaId ? { ...c, estado: 'CANCELADA' as const } : c))
+      );
+      return true;
+    } catch (err) {
+      console.error('[AppointmentContext] Error cancelando cita:', err);
+      return false;
+    }
   };
 
-  const marcarNotificacionesLeidas = () => {
+  const marcarNotificacionesLeidas = async () => {
     setNotificaciones((prev) => prev.map((n) => ({ ...n, leida: true })));
+    try {
+      await notificationRepository.marcarComoLeidas();
+    } catch (err) {
+      console.warn('[AppointmentContext] Error marcando notificaciones como leídas:', err);
+    }
   };
 
-  const agregarRegistroEVA = (nivelDolor: number, zonaAfectada: string, comentario: string) => {
-    const nuevoReg: RegistroEVA = {
-      id: `eva-${Date.now()}`,
-      pacienteId: 'pac-1725893412',
-      fecha: new Date().toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' }),
-      nivelDolor,
-      zonaAfectada,
-      comentario,
-    };
-    setRegistrosEVA((prev) => [nuevoReg, ...prev]);
+  const agregarRegistroEVA = async (nivelDolor: number, zonaAfectada: string, comentario: string) => {
+    try {
+      const nuevoReg = await clinicalRepository.agregarRegistroEva({
+        pacienteId: 'pac-1725893412',
+        fecha: new Date().toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' }),
+        nivelDolor,
+        zonaAfectada,
+        comentario,
+      });
+      setRegistrosEVA((prev) => [nuevoReg, ...prev]);
+    } catch (err) {
+      console.error('[AppointmentContext] Error agregando registro EVA:', err);
+    }
   };
 
   return (
@@ -129,6 +184,7 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         marcarNotificacionesLeidas,
         agregarRegistroEVA,
         contadorNotificacionesNoLeidas,
+        recargarDatos,
       }}
     >
       {children}
@@ -137,4 +193,3 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
 };
 
 export const useAppointments = () => useContext(AppointmentContext);
-
