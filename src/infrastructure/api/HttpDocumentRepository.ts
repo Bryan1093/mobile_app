@@ -1,4 +1,4 @@
-import { apiClient } from '../../api/client';
+import { apiClient } from './client';
 import { DocumentoClinico } from '../../core/domain';
 import { IDocumentRepository } from '../../core/ports';
 import { handleAxiosError } from './httpErrors';

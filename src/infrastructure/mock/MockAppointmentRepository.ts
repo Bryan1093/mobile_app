@@ -14,7 +14,7 @@ import {
   FISIOTERAPEUTAS_MOCK,
   SEDE_UNICA,
   generarBloquesDisponibles,
-} from '../../data/mockData';
+} from './mockData';
 
 export class MockAppointmentRepository implements IAppointmentRepository {
   private citas: Cita[] = [...CITAS_INICIALES_MOCK];

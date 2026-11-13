@@ -1,14 +1,14 @@
 import * as Notifications from 'expo-notifications';
 import { useEffect, useRef, useState } from 'react';
-import { useAppointments } from '../../context/AppointmentContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAppointments } from '../context/AppointmentContext';
+import { useAuth } from '../context/AuthContext';
 import { Notificacion } from '../../core/domain';
 import { notificationRepository } from '../../infrastructure/container';
-import { navigate } from '../../navigation/navigationRef';
+import { navigate } from '../navigation/navigationRef';
 import {
   configureNotificationHandler,
   registerForPushNotificationsAsync,
-} from '../../services/notifications';
+} from '../../infrastructure/notifications/notifications';
 
 // Inicializar el manejador de notificaciones una sola vez al cargar el módulo
 configureNotificationHandler();

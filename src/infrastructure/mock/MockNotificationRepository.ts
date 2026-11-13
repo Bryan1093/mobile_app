@@ -1,6 +1,6 @@
 import { Notificacion } from '../../core/domain';
 import { INotificationRepository } from '../../core/ports';
-import { NOTIFICACIONES_MOCK } from '../../data/mockData';
+import { NOTIFICACIONES_MOCK } from './mockData';
 
 export class MockNotificationRepository implements INotificationRepository {
   private notificaciones: Notificacion[] = [...NOTIFICACIONES_MOCK];

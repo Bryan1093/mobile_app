@@ -1,7 +1,7 @@
-import { getAuthToken, removeAuthToken, saveAuthToken } from '../../api/client';
+import { getAuthToken, removeAuthToken, saveAuthToken } from '../api/client';
 import { RegistroPacienteDTO, UsuarioPaciente, ValidationError } from '../../core/domain';
 import { IAuthRepository } from '../../core/ports';
-import { PACIENTE_ACTUAL_MOCK } from '../../data/mockData';
+import { PACIENTE_ACTUAL_MOCK } from './mockData';
 
 export class MockAuthRepository implements IAuthRepository {
   private currentUser: UsuarioPaciente | null = PACIENTE_ACTUAL_MOCK;

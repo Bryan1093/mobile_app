@@ -1,4 +1,4 @@
-import { apiClient } from '../../api/client';
+import { apiClient } from './client';
 import { Notificacion } from '../../core/domain';
 import { INotificationRepository } from '../../core/ports';
 import { handleAxiosError } from './httpErrors';

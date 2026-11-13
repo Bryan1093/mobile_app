@@ -1,9 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { AppointmentProvider } from './src/context/AppointmentContext';
-import { AuthProvider } from './src/context/AuthContext';
-import { AppNavigator } from './src/navigation/AppNavigator';
+import { AppointmentProvider } from './src/presentation/context/AppointmentContext';
+import { AuthProvider } from './src/presentation/context/AuthContext';
+import { AppNavigator } from './src/presentation/navigation/AppNavigator';
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -1,4 +1,4 @@
-import { apiClient, removeAuthToken, saveAuthToken } from '../../api/client';
+import { apiClient, removeAuthToken, saveAuthToken } from './client';
 import { RegistroPacienteDTO, UsuarioPaciente } from '../../core/domain';
 import { IAuthRepository } from '../../core/ports';
 import { handleAxiosError } from './httpErrors';

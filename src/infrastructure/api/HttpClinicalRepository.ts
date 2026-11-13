@@ -1,4 +1,4 @@
-import { apiClient } from '../../api/client';
+import { apiClient } from './client';
 import { RegistroEva } from '../../core/domain';
 import { IClinicalRepository } from '../../core/ports';
 import { handleAxiosError } from './httpErrors';

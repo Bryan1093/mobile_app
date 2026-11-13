@@ -1,6 +1,6 @@
 import { DocumentoClinico, NotFoundError } from '../../core/domain';
 import { IDocumentRepository } from '../../core/ports';
-import { DOCUMENTOS_MOCK } from '../../data/mockData';
+import { DOCUMENTOS_MOCK } from './mockData';
 
 export class MockDocumentRepository implements IDocumentRepository {
   private documentos: DocumentoClinico[] = [...DOCUMENTOS_MOCK];
