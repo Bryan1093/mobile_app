@@ -1,4 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
+import { useQueryClient } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
@@ -16,24 +17,46 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressableScale } from '../../components/common/PressableScale';
 import { THEME } from '../../theme/theme';
+import { useAppointments } from '../../context/AppointmentContext';
 import { useAuth } from '../../context/AuthContext';
-import {
-  DIRECCION_SEDE,
-  GOOGLE_MAPS_SEDE_URL,
-} from '../../../infrastructure/mock/mockData';
+import { CLINIC_INFO } from '../../../shared/constants/clinic';
 import { DataSourceType, container } from '../../../infrastructure/container';
+
+function calcularEdadTexto(fechaNacimiento?: string): string | null {
+  if (!fechaNacimiento) return null;
+  const nacimiento = new Date(fechaNacimiento);
+  if (Number.isNaN(nacimiento.getTime())) return null;
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - nacimiento.getFullYear();
+  const m = hoy.getMonth() - nacimiento.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
+    edad--;
+  }
+  return edad >= 0 && edad < 130 ? `${edad} años` : null;
+}
 
 export const CuentaScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const { usuario, logout } = useAuth();
+  const { recargarDatos } = useAppointments();
   const [modalLOPDPVisible, setModalLOPDPVisible] = useState(false);
   const [modalSedeVisible, setModalSedeVisible] = useState(false);
   const [dataSource, setDataSourceState] = useState<DataSourceType>(container.dataSource);
 
+  const edadTexto = calcularEdadTexto(usuario?.fechaNacimiento);
+  const metaParts = [
+    edadTexto,
+    usuario?.cedula ? `C.I. ${usuario.cedula}` : null,
+  ].filter(Boolean);
+  const userMetaTexto = metaParts.join('  |  ') || usuario?.correo || '';
+
   const handleCambiarOrigenDatos = () => {
     const next: DataSourceType = dataSource === 'mock' ? 'api' : 'mock';
     container.setDataSource(next);
+    queryClient.clear();
     setDataSourceState(next);
+    void recargarDatos();
     Alert.alert(
       'Fuente de Datos Conmutada',
       next === 'api'
@@ -59,11 +82,11 @@ export const CuentaScreen: React.FC = () => {
 
   const handleAbrirGoogleMaps = async () => {
     try {
-      const supported = await Linking.canOpenURL(GOOGLE_MAPS_SEDE_URL);
+      const supported = await Linking.canOpenURL(CLINIC_INFO.googleMapsUrl);
       if (supported) {
-        await Linking.openURL(GOOGLE_MAPS_SEDE_URL);
+        await Linking.openURL(CLINIC_INFO.googleMapsUrl);
       } else {
-        await Linking.openURL(GOOGLE_MAPS_SEDE_URL);
+        await Linking.openURL(CLINIC_INFO.googleMapsUrl);
       }
     } catch {
       Alert.alert(
@@ -95,7 +118,7 @@ export const CuentaScreen: React.FC = () => {
         <Text style={styles.userName}>
           {usuario?.nombres} {usuario?.apellidos}
         </Text>
-        <Text style={styles.userMeta}>28 años  |  C.I. {usuario?.cedula}</Text>
+        {userMetaTexto ? <Text style={styles.userMeta}>{userMetaTexto}</Text> : null}
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -130,7 +153,7 @@ export const CuentaScreen: React.FC = () => {
               </View>
               <View style={styles.menuTextContainer}>
                 <Text style={styles.menuTitle}>Centro de Atención</Text>
-                <Text style={styles.menuSub}>{DIRECCION_SEDE}</Text>
+                <Text style={styles.menuSub}>{CLINIC_INFO.direccion}</Text>
               </View>
               <MaterialIcons name="chevron-right" size={22} color="#94A3B8" />
             </View>

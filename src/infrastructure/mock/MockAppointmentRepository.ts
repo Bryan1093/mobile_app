@@ -29,7 +29,7 @@ export class MockAppointmentRepository implements IAppointmentRepository {
     return [...FISIOTERAPEUTAS_MOCK];
   }
 
-  async getDisponibilidad(fecha: string, doctorId: string): Promise<BloqueHorario[]> {
+  async getDisponibilidad(fecha: string, doctorId: string, _servicioId?: string): Promise<BloqueHorario[]> {
     await new Promise((res) => setTimeout(res, 300));
     const raw = generarBloquesDisponibles(fecha, doctorId);
     return raw.map((item) => ({
@@ -92,7 +92,7 @@ export class MockAppointmentRepository implements IAppointmentRepository {
     return nuevaCita;
   }
 
-  async cancelarCita(id: string): Promise<boolean> {
+  async cancelarCita(id: string, _motivo?: string): Promise<boolean> {
     await new Promise((res) => setTimeout(res, 400));
     const index = this.citas.findIndex((c) => c.id === id);
     if (index === -1) {

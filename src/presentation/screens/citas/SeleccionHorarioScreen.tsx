@@ -1,10 +1,12 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { useQueries } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import React, { useMemo, useState } from 'react';
 import {
   Image,
   Platform,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -17,39 +19,75 @@ import { HorariosModal } from '../../components/modals/HorariosModal';
 import { PressableScale } from '../../components/common/PressableScale';
 import { FisioterapeutaCardSkeleton } from '../../components/common/SkeletonLoader';
 import { THEME } from '../../theme/theme';
-import {
-  ESPECIALIDADES_MOCK,
-  FISIOTERAPEUTAS_MOCK,
-  SEDE_UNICA,
-  generarBloquesDisponibles,
-} from '../../../infrastructure/mock/mockData';
-import { useEspecialidades, useFisioterapeutas } from '../../hooks';
+import { useAuth } from '../../context/AuthContext';
+import { appointmentRepository } from '../../../infrastructure/container';
+import { APPOINTMENT_KEYS, useEspecialidades, useFisioterapeutas } from '../../hooks';
 import { BloqueHorario, CitasStackParamList, Fisioterapeuta } from '../../../shared/types';
 
 export const SeleccionHorarioScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<CitasStackParamList, 'SeleccionHorario'>>();
+  const { usuario } = useAuth();
 
-  const { data: especialidadesData } = useEspecialidades();
-  const { data: fisioterapeutasData, isLoading: loadingFisio } = useFisioterapeutas();
+  const {
+    data: especialidadesData,
+    isLoading: loadingEsp,
+    isError: errorEsp,
+    error: errorEspObj,
+    refetch: refetchEsp,
+  } = useEspecialidades();
+  const {
+    data: fisioterapeutasData,
+    isLoading: loadingFisio,
+    isError: errorFisio,
+    error: errorFisioObj,
+    refetch: refetchFisio,
+  } = useFisioterapeutas();
 
-  const especialidades = especialidadesData && especialidadesData.length > 0 ? especialidadesData : ESPECIALIDADES_MOCK;
-  const fisioterapeutas = fisioterapeutasData && fisioterapeutasData.length > 0 ? fisioterapeutasData : FISIOTERAPEUTAS_MOCK;
+  const especialidades = useMemo(() => especialidadesData ?? [], [especialidadesData]);
+  const fisioterapeutas = useMemo(() => fisioterapeutasData ?? [], [fisioterapeutasData]);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Filtro de Especialidad seleccionado (o 'TODAS')
-  const [especialidadFiltro, setEspecialidadFiltro] = useState<string>(() => {
+  const [especialidadFiltroSeleccionado, setEspecialidadFiltro] = useState<string>(() => {
     return route.params?.especialidadIdPrevia || 'TODAS';
   });
 
-  // Generador de días en carrusel (Octubre 2026 como en Veris)
+  // Si la especialidad previa no existe en el catálogo actual (ej. fue desactivada o viene de un ID antiguo), usar 'TODAS'
+  const especialidadFiltro = useMemo(() => {
+    if (
+      especialidadFiltroSeleccionado !== 'TODAS' &&
+      especialidades.length > 0 &&
+      !especialidades.some((e) => e.id === especialidadFiltroSeleccionado)
+    ) {
+      return 'TODAS';
+    }
+    return especialidadFiltroSeleccionado;
+  }, [especialidadFiltroSeleccionado, especialidades]);
+
+  // Generador de días en carrusel
   const diasDisponibles = useMemo(() => {
     const dias = [];
     const nombresDias = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'];
+    const nombresMeses = [
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
+    ];
     const hoy = new Date();
 
     for (let i = 0; i < 14; i++) {
-      const fecha = new Date();
+      const fecha = new Date(hoy);
       fecha.setDate(hoy.getDate() + i);
 
       // En Innova Fisioterapia no hay atención los domingos
@@ -64,6 +102,8 @@ export const SeleccionHorarioScreen: React.FC = () => {
         esHoy: i === 0,
         diaSemana: nombresDias[fecha.getDay()],
         numeroDia: dd,
+        mesNombre: nombresMeses[fecha.getMonth()],
+        anio: yyyy,
         fechaCompleta: `${yyyy}-${mm}-${dd}`,
       });
     }
@@ -79,28 +119,66 @@ export const SeleccionHorarioScreen: React.FC = () => {
   // Fisioterapeutas filtrados por la especialidad seleccionada
   const fisioterapeutasFiltrados = useMemo(() => {
     if (especialidadFiltro === 'TODAS') return fisioterapeutas;
-    return fisioterapeutas.filter((f) => f.especialidadesIds.includes(especialidadFiltro));
+    return fisioterapeutas.filter(
+      (f) => f.especialidadesIds.length === 0 || f.especialidadesIds.includes(especialidadFiltro)
+    );
   }, [especialidadFiltro, fisioterapeutas]);
 
+  const servicioIdParaConsulta = useMemo(() => {
+    if (especialidadFiltro !== 'TODAS') return especialidadFiltro;
+    return especialidades[0]?.id;
+  }, [especialidadFiltro, especialidades]);
+
+  const disponibilidadQueries = useQueries({
+    queries: fisioterapeutasFiltrados.map((fisio) => ({
+      queryKey: APPOINTMENT_KEYS.disponibilidad(
+        diaSeleccionado.fechaCompleta,
+        fisio.id,
+        servicioIdParaConsulta
+      ),
+      queryFn: () =>
+        appointmentRepository.getDisponibilidad(
+          diaSeleccionado.fechaCompleta,
+          fisio.id,
+          servicioIdParaConsulta
+        ),
+      enabled: Boolean(
+        usuario && diaSeleccionado?.fechaCompleta && fisio.id && servicioIdParaConsulta
+      ),
+      staleTime: 1000 * 15,
+    })),
+  });
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([refetchEsp(), refetchFisio()]);
+      await Promise.all(disponibilidadQueries.map((q) => q.refetch()));
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   // Bloques para el modal del fisioterapeuta activo
-  const bloquesDelFisioModal = useMemo(() => {
-    if (!fisioterapeutaModal || !diaSeleccionado) return [];
-    return generarBloquesDisponibles(diaSeleccionado.fechaCompleta, fisioterapeutaModal.id);
-  }, [fisioterapeutaModal, diaSeleccionado]);
+  const modalQueryIndex = fisioterapeutaModal
+    ? fisioterapeutasFiltrados.findIndex((f) => f.id === fisioterapeutaModal.id)
+    : -1;
+  const bloquesDelFisioModal =
+    modalQueryIndex >= 0 ? (disponibilidadQueries[modalQueryIndex]?.data ?? []) : [];
+  const loadingModalBloques =
+    modalQueryIndex >= 0 ? (disponibilidadQueries[modalQueryIndex]?.isLoading ?? false) : false;
 
   // Navegar a confirmación con el bloque elegido
-  const handleConfirmarBloque = (
-    fisio: Fisioterapeuta,
-    bloque: { id: string; horaInicio: string; horaFin: string }
-  ) => {
+  const handleConfirmarBloque = (fisio: Fisioterapeuta, bloque: BloqueHorario) => {
     const esp =
+      (especialidadFiltro !== 'TODAS'
+        ? especialidades.find((e) => e.id === especialidadFiltro)
+        : undefined) ||
       especialidades.find((e) => fisio.especialidadesIds.includes(e.id)) ||
       especialidades[0];
 
     const bloqueObj: BloqueHorario = {
-      id: bloque.id,
-      horaInicio: bloque.horaInicio,
-      horaFin: bloque.horaFin,
+      ...bloque,
       disponible: true,
       fisioterapeutaId: fisio.id,
       fecha: diaSeleccionado.fechaCompleta,
@@ -143,14 +221,20 @@ export const SeleccionHorarioScreen: React.FC = () => {
         <Text style={styles.pageMainTitle}>Datos para la cita</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+      >
         {/* Banner Azul Marino de Fechas (Idéntico a MiVeris) */}
         <View style={styles.verisNavyBanner}>
           <View style={styles.monthHeaderRow}>
             <TouchableOpacity style={styles.chevronBtn}>
               <MaterialIcons name="chevron-left" size={24} color="#FFFFFF" />
             </TouchableOpacity>
-            <Text style={styles.monthTitle}>Octubre 2026</Text>
+            <Text style={styles.monthTitle}>
+              {diaSeleccionado.mesNombre} {diaSeleccionado.anio}
+            </Text>
             <TouchableOpacity style={styles.chevronBtn}>
               <MaterialIcons name="chevron-right" size={24} color="#FFFFFF" />
             </TouchableOpacity>
@@ -237,17 +321,54 @@ export const SeleccionHorarioScreen: React.FC = () => {
 
         {/* Lista de Fisioterapeutas con el patrón de MiVeris */}
         <View style={styles.doctorsListSection}>
-          {loadingFisio && !fisioterapeutasData ? (
+          {(loadingFisio || loadingEsp) && !fisioterapeutasData ? (
             <>
               <FisioterapeutaCardSkeleton />
               <FisioterapeutaCardSkeleton />
             </>
+          ) : errorFisio || errorEsp ? (
+            <View style={styles.emptyStateBox}>
+              <MaterialIcons name="wifi-off" size={36} color={THEME.colors.danger} />
+              <Text style={styles.emptyStateTitle}>No se pudo cargar la agenda</Text>
+              <Text style={styles.emptyStateSub}>
+                {(errorFisioObj as Error)?.message ||
+                  (errorEspObj as Error)?.message ||
+                  'Verifica tu conexión con el servidor de Innova Fisioterapia.'}
+              </Text>
+              <TouchableOpacity
+                style={styles.retryBtn}
+                onPress={handleRefresh}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.retryBtnText}>Reintentar</Text>
+              </TouchableOpacity>
+            </View>
+          ) : fisioterapeutasFiltrados.length === 0 ? (
+            <View style={styles.emptyStateBox}>
+              <MaterialIcons name="person-search" size={36} color={THEME.colors.textMuted} />
+              <Text style={styles.emptyStateTitle}>Sin fisioterapeutas disponibles</Text>
+              <Text style={styles.emptyStateSub}>
+                {especialidadFiltro !== 'TODAS'
+                  ? 'No hay especialistas registrados para esta categoría. Prueba seleccionando "Todas".'
+                  : 'Aún no hay fisioterapeutas activos registrados en el sistema.'}
+              </Text>
+              {especialidadFiltro !== 'TODAS' && (
+                <TouchableOpacity
+                  style={styles.retryBtn}
+                  onPress={() => setEspecialidadFiltro('TODAS')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.retryBtnText}>Ver todos los especialistas</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           ) : (
-            fisioterapeutasFiltrados.map((fisio) => {
+            fisioterapeutasFiltrados.map((fisio, index) => {
             const espPrincipal =
+              fisio.especialidad ||
               especialidades.find((e) => fisio.especialidadesIds.includes(e.id))?.nombre ||
-              'Fisioterapia Integral';
-            const bloques = generarBloquesDisponibles(diaSeleccionado.fechaCompleta, fisio.id);
+              'Fisioterapia';
+            const bloques = disponibilidadQueries[index]?.data ?? [];
             const proximoHorario = bloques[0];
 
             return (
@@ -261,7 +382,7 @@ export const SeleccionHorarioScreen: React.FC = () => {
                     <Text style={styles.doctorName}>
                       {fisio.nombres} {fisio.apellidos}
                     </Text>
-                    <Text style={styles.doctorSede}>{SEDE_UNICA}</Text>
+                    <Text style={styles.doctorSede}>{fisio.sede}</Text>
                     <Text style={styles.doctorSpecialty}>{espPrincipal}</Text>
                   </View>
                 </View>
@@ -311,8 +432,9 @@ export const SeleccionHorarioScreen: React.FC = () => {
       <HorariosModal
         visible={modalHorariosVisible}
         fisioterapeuta={fisioterapeutaModal}
-        fechaTexto={`${diaSeleccionado.diaSemana} ${diaSeleccionado.numeroDia} de Octubre`}
+        fechaTexto={`${diaSeleccionado.diaSemana} ${diaSeleccionado.numeroDia} de ${diaSeleccionado.mesNombre}`}
         bloques={bloquesDelFisioModal}
+        isLoading={loadingModalBloques}
         onSeleccionarBloque={(bloque) => {
           if (fisioterapeutaModal) {
             handleConfirmarBloque(fisioterapeutaModal, bloque);
@@ -583,5 +705,39 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     color: '#FFFFFF',
+  },
+  emptyStateBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  emptyStateTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#0F2820',
+    textAlign: 'center',
+  },
+  emptyStateSub: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  retryBtn: {
+    marginTop: 6,
+    backgroundColor: '#1B6B53',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

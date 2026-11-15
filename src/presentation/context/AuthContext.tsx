@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { RegistroPacienteDTO, UsuarioPaciente } from '../../core/domain';
 import { authRepository } from '../../infrastructure/container';
@@ -13,6 +14,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const queryClient = useQueryClient();
   const [usuario, setUsuario] = useState<UsuarioPaciente | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -48,6 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const user = await authRepository.login(identificador, contrasena);
+      queryClient.clear();
       setUsuario(user);
       return { ok: true };
     } catch (e: any) {
@@ -66,6 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const user = await authRepository.register(datos);
+      queryClient.clear();
       setUsuario(user);
       return { ok: true };
     } catch (e: any) {
@@ -82,9 +86,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       await authRepository.logout();
+      queryClient.clear();
       setUsuario(null);
     } catch (e) {
       console.warn('[AuthContext] Error durante logout:', e);
+      queryClient.clear();
       setUsuario(null);
     } finally {
       setIsLoading(false);

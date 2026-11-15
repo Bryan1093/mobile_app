@@ -29,6 +29,7 @@ export interface Fisioterapeuta {
   id: string;
   nombres: string;
   apellidos: string;
+  especialidad?: string;
   fotoUrl: string;
   registroProfesional: string;
   sede: string; // "Innova Fisioterapia - Tumbaco"
@@ -43,6 +44,9 @@ export interface BloqueHorario {
   disponible: boolean;
   fisioterapeutaId: string;
   fecha: string;      // "YYYY-MM-DD"
+  camillaId?: string;
+  inicioIso?: string;
+  finIso?: string;
 }
 
 export type EstadoCita = 'PROGRAMADA' | 'COMPLETADA' | 'CANCELADA' | 'EN_CURSO';
@@ -140,6 +144,9 @@ export interface AgendarCitaDTO {
   horaInicio: string; // HH:mm
   horaFin: string;    // HH:mm
   sede?: string;
+  camillaId?: string;
+  inicioIso?: string;
+  notas?: string;
 }
 
 export interface ReservaParams {

@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { THEME } from '../../theme/theme';
-import { Fisioterapeuta } from '../../../shared/types';
+import { BloqueHorario, Fisioterapeuta } from '../../../shared/types';
 import { PressableScale } from '../common/PressableScale';
 import { BloqueHorarioSkeleton } from '../common/SkeletonLoader';
 
@@ -18,9 +18,9 @@ interface HorariosModalProps {
   visible: boolean;
   fisioterapeuta: Fisioterapeuta | null;
   fechaTexto: string;
-  bloques: { id: string; horaInicio: string; horaFin: string }[];
+  bloques: BloqueHorario[];
   isLoading?: boolean;
-  onSeleccionarBloque: (bloque: { id: string; horaInicio: string; horaFin: string }) => void;
+  onSeleccionarBloque: (bloque: BloqueHorario) => void;
   onClose: () => void;
 }
 
@@ -68,7 +68,7 @@ export const HorariosModal: React.FC<HorariosModalProps> = ({
 
           {/* Subtítulo informativo */}
           <View style={styles.subHeaderRow}>
-            <Text style={styles.subHeaderTitle}>Turnos de 60 minutos disponibles:</Text>
+            <Text style={styles.subHeaderTitle}>Turnos disponibles:</Text>
             <View style={styles.totalBadge}>
               <Text style={styles.totalBadgeText}>
                 {isLoading ? '...' : `${bloques.length} libres`}

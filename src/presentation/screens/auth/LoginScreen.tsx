@@ -18,13 +18,18 @@ import {
 } from 'react-native';
 import { THEME } from '../../theme/theme';
 import { useAuth } from '../../context/AuthContext';
+import { container } from '../../../infrastructure/container';
 
 export const LoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { login } = useAuth();
 
-  const [identificador, setIdentificador] = useState('1725893412');
-  const [contrasena, setContrasena] = useState('password123');
+  const [identificador, setIdentificador] = useState(
+    container.dataSource === 'mock' ? '1725893412' : ''
+  );
+  const [contrasena, setContrasena] = useState(
+    container.dataSource === 'mock' ? 'password123' : ''
+  );
   const [cargando, setCargando] = useState(false);
   const [mostrarPass, setMostrarPass] = useState(false);
 
@@ -55,7 +60,7 @@ export const LoginScreen: React.FC = () => {
           <View style={styles.heroSection}>
             <View style={styles.logoBoxLogin}>
               <Image
-                source={require('../../../assets/logo_innova.png')}
+                source={require('../../../../assets/logo_innova.png')}
                 style={styles.logoImageLogin}
                 resizeMode="contain"
               />

@@ -5,6 +5,7 @@ import {
   documentRepository,
   notificationRepository,
 } from '../../infrastructure/container';
+import { useAuth } from '../context/AuthContext';
 
 export const CLINICAL_KEYS = {
   eva: ['clinical', 'eva'] as const,
@@ -13,9 +14,11 @@ export const CLINICAL_KEYS = {
 };
 
 export function useHistorialEva() {
+  const { usuario } = useAuth();
   return useQuery<RegistroEva[]>({
     queryKey: CLINICAL_KEYS.eva,
     queryFn: () => clinicalRepository.getHistorialEva(),
+    enabled: Boolean(usuario),
   });
 }
 
@@ -31,16 +34,20 @@ export function useAgregarRegistroEva() {
 }
 
 export function useDocumentos() {
+  const { usuario } = useAuth();
   return useQuery<DocumentoClinico[]>({
     queryKey: CLINICAL_KEYS.documentos,
     queryFn: () => documentRepository.getDocumentos(),
+    enabled: Boolean(usuario),
   });
 }
 
 export function useNotificaciones() {
+  const { usuario } = useAuth();
   return useQuery<Notificacion[]>({
     queryKey: CLINICAL_KEYS.notificaciones,
     queryFn: () => notificationRepository.getNotificaciones(),
+    enabled: Boolean(usuario),
   });
 }
 

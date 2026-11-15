@@ -20,7 +20,6 @@ import { SuccessBookingModal } from '../../components/modals/SuccessBookingModal
 import { THEME } from '../../theme/theme';
 import { useAppointments } from '../../context/AppointmentContext';
 import { useAuth } from '../../context/AuthContext';
-import { PRECIO_SESION, SEDE_UNICA } from '../../../infrastructure/mock/mockData';
 import { CitasStackParamList } from '../../../shared/types';
 
 export const ConfirmarCitaScreen: React.FC = () => {
@@ -124,7 +123,9 @@ export const ConfirmarCitaScreen: React.FC = () => {
             <Text style={styles.cardHeaderTitle}>Valor de la Sesión</Text>
           </View>
           <View style={styles.cardBody}>
-            <Text style={styles.precioGrande}>{PRECIO_SESION}</Text>
+            <Text style={styles.precioGrande}>
+              Sesión de {especialidad.duracionMinutos} min
+            </Text>
 
             <View style={styles.pagoPresencialBox}>
               <View style={styles.pagoPresencialHeader}>
@@ -147,7 +148,7 @@ export const ConfirmarCitaScreen: React.FC = () => {
           <View style={styles.cardBody}>
             <Text style={styles.detalleEspecialidad}>{especialidad.nombre}</Text>
             <Text style={styles.detalleSede}>
-              <MaterialIcons name="location-on" size={14} color="#0052CC" /> {SEDE_UNICA}
+              <MaterialIcons name="location-on" size={14} color="#0052CC" /> {fisioterapeuta.sede}
             </Text>
 
             <View style={styles.metaRow}>
@@ -237,8 +238,7 @@ export const ConfirmarCitaScreen: React.FC = () => {
           especialidad: especialidad.nombre,
           fechaTexto: fechaFormateada,
           horario: `${bloqueHorario.horaInicio} - ${bloqueHorario.horaFin}`,
-          sede: SEDE_UNICA,
-          precio: PRECIO_SESION,
+          sede: fisioterapeuta.sede,
         }}
         onVerCitas={handleIrAMisCitas}
         onVolverInicio={handleIrAInicio}

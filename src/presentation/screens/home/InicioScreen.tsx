@@ -67,7 +67,7 @@ export const InicioScreen: React.FC = () => {
         ]}
       >
         <Image
-          source={require('../../../assets/logo_innova.png')}
+          source={require('../../../../assets/logo_innova.png')}
           style={styles.logoInnovaHeader}
           resizeMode="contain"
         />
@@ -100,7 +100,9 @@ export const InicioScreen: React.FC = () => {
         {/* Saludo Personalizado Estilo MiVeris */}
         <View style={styles.saludoContainer}>
           <Text style={styles.saludoPequeno}>Buenas tardes,</Text>
-          <Text style={styles.saludoGrande}>{usuario?.nombres.split(' ')[0] || 'Brayan'}.</Text>
+          <Text style={styles.saludoGrande}>
+            {usuario?.nombres?.trim().split(' ')[0] || 'Paciente'}.
+          </Text>
         </View>
         {/* Tarjeta Destacada con Degradado Verde Esmeralda Innova */}
         <LinearGradient

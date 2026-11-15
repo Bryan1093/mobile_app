@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import {
   Cita,
   ConflictError,
@@ -13,6 +13,7 @@ import {
   documentRepository,
   notificationRepository,
 } from '../../infrastructure/container';
+import { useAuth } from './AuthContext';
 
 interface AppointmentContextType {
   citas: Cita[];
@@ -34,16 +35,26 @@ interface AppointmentContextType {
 const AppointmentContext = createContext<AppointmentContextType>({} as AppointmentContextType);
 
 export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { usuario } = useAuth();
   const [citas, setCitas] = useState<Cita[]>([]);
   const [documentos, setDocumentos] = useState<DocumentoClinico[]>([]);
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [registrosEVA, setRegistrosEVA] = useState<RegistroEva[]>([]);
-  const [cargando, setCargando] = useState<boolean>(true);
+  const [cargando, setCargando] = useState<boolean>(false);
   const [conflictModalVisible, setConflictModalVisible] = useState<boolean>(false);
 
   const contadorNotificacionesNoLeidas = notificaciones.filter((n) => !n.leida).length;
 
-  const recargarDatos = async () => {
+  const recargarDatos = useCallback(async () => {
+    if (!usuario) {
+      setCitas([]);
+      setDocumentos([]);
+      setNotificaciones([]);
+      setRegistrosEVA([]);
+      setCargando(false);
+      return;
+    }
+
     setCargando(true);
     try {
       const [citasRes, docRes, notifRes, evaRes] = await Promise.all([
@@ -61,10 +72,16 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     } finally {
       setCargando(false);
     }
-  };
+  }, [usuario]);
 
   useEffect(() => {
     let isMounted = true;
+
+    if (!usuario) {
+      return () => {
+        isMounted = false;
+      };
+    }
 
     const cargarInicial = async () => {
       try {
@@ -89,12 +106,12 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     };
 
-    cargarInicial();
+    void cargarInicial();
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [usuario]);
 
   const agendarCita = async ({
     pacienteId,
@@ -116,6 +133,8 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         horaInicio: bloque.horaInicio,
         horaFin: bloque.horaFin,
         sede: fisioterapeuta.sede,
+        camillaId: bloque.camillaId,
+        inicioIso: bloque.inicioIso,
       });
 
       setCitas((prev) => [nuevaCita, ...prev]);
@@ -175,9 +194,10 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const agregarRegistroEVA = async (nivelDolor: number, zonaAfectada: string, comentario: string) => {
+    if (!usuario) return;
     try {
       const nuevoReg = await clinicalRepository.agregarRegistroEva({
-        pacienteId: 'pac-1725893412',
+        pacienteId: usuario.id,
         fecha: new Date().toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' }),
         nivelDolor,
         zonaAfectada,
@@ -192,11 +212,11 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
   return (
     <AppointmentContext.Provider
       value={{
-        citas,
-        documentos,
-        notificaciones,
-        registrosEVA,
-        cargando,
+        citas: usuario ? citas : [],
+        documentos: usuario ? documentos : [],
+        notificaciones: usuario ? notificaciones : [],
+        registrosEVA: usuario ? registrosEVA : [],
+        cargando: usuario ? cargando : false,
         conflictModalVisible,
         setConflictModalVisible,
         agendarCita,
@@ -204,7 +224,7 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         marcarNotificacionesLeidas,
         agregarNotificacionInApp,
         agregarRegistroEVA,
-        contadorNotificacionesNoLeidas,
+        contadorNotificacionesNoLeidas: usuario ? contadorNotificacionesNoLeidas : 0,
         recargarDatos,
       }}
     >

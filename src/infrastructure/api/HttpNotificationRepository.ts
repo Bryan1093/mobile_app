@@ -1,6 +1,7 @@
-import { apiClient } from './client';
+import { isAxiosError } from 'axios';
 import { Notificacion } from '../../core/domain';
 import { INotificationRepository } from '../../core/ports';
+import { apiClient } from './client';
 import { handleAxiosError } from './httpErrors';
 
 export class HttpNotificationRepository implements INotificationRepository {
@@ -8,16 +9,23 @@ export class HttpNotificationRepository implements INotificationRepository {
     try {
       await apiClient.post('/notificaciones/push-token', { token });
     } catch (error) {
-      // Registrar push token no debe bloquear la app si falla
-      console.warn('[HttpNotificationRepository] Error registrando push token:', error);
+      if (__DEV__) {
+        console.warn('[HttpNotificationRepository] Error registrando push token:', error);
+      }
     }
   }
 
   async getNotificaciones(): Promise<Notificacion[]> {
     try {
-      const response = await apiClient.get('/notificaciones');
-      return response.data?.data || response.data;
+      const response = await apiClient.get<Notificacion[]>('/notificaciones');
+      return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
+      if (isAxiosError(error) && error.response?.status === 404) {
+        if (__DEV__) {
+          console.warn('[HttpNotificationRepository] Endpoint GET /notificaciones aún no disponible (404).');
+        }
+        return [];
+      }
       return handleAxiosError(error);
     }
   }
@@ -29,7 +37,9 @@ export class HttpNotificationRepository implements INotificationRepository {
       try {
         await apiClient.post('/notificaciones/marcar-leidas');
       } catch (err) {
-        console.warn('[HttpNotificationRepository] Error marcando leídas:', err);
+        if (__DEV__) {
+          console.warn('[HttpNotificationRepository] Error marcando leídas:', err);
+        }
       }
     }
   }

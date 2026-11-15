@@ -8,6 +8,36 @@ import {
   ValidationError,
 } from '../../core/domain';
 
+interface ErrorApiPayload {
+  codigo?: string;
+  mensaje?: string;
+  message?: string;
+  error?: string;
+  detalles?: unknown;
+  errors?: Record<string, string[]>;
+}
+
+function parseValidationDetails(detalles: unknown): Record<string, string[]> | undefined {
+  if (!Array.isArray(detalles)) return undefined;
+  const mapped: Record<string, string[]> = {};
+  for (const item of detalles) {
+    if (
+      item &&
+      typeof item === 'object' &&
+      'campo' in item &&
+      'mensaje' in item &&
+      typeof (item as { campo: unknown }).campo === 'string' &&
+      typeof (item as { mensaje: unknown }).mensaje === 'string'
+    ) {
+      const campo = (item as { campo: string }).campo || 'general';
+      const mensaje = (item as { mensaje: string }).mensaje;
+      if (!mapped[campo]) mapped[campo] = [];
+      mapped[campo].push(mensaje);
+    }
+  }
+  return Object.keys(mapped).length > 0 ? mapped : undefined;
+}
+
 export function handleAxiosError(error: unknown): never {
   if (isAxiosError(error)) {
     if (!error.response) {
@@ -17,8 +47,13 @@ export function handleAxiosError(error: unknown): never {
     }
 
     const status = error.response.status;
-    const data = error.response.data as any;
-    const message = data?.message || data?.error || error.message || 'Error en la petición';
+    const data = error.response.data as ErrorApiPayload | undefined;
+    const message =
+      data?.mensaje ||
+      data?.message ||
+      data?.error ||
+      error.message ||
+      'Error en la petición';
 
     if (status === 409) {
       throw new ConflictError(
@@ -35,15 +70,18 @@ export function handleAxiosError(error: unknown): never {
     }
 
     if (status === 400 || status === 422) {
-      throw new ValidationError(message || 'Datos de formulario inválidos.', data?.errors);
+      const fieldErrors = data?.errors ?? parseValidationDetails(data?.detalles);
+      throw new ValidationError(message || 'Datos de formulario inválidos.', fieldErrors);
     }
 
-    throw new DomainError(message, `HTTP_${status}`, status);
+    throw new DomainError(message, data?.codigo || `HTTP_${status}`, status);
   }
 
   if (error instanceof DomainError) {
     throw error;
   }
 
-  throw new DomainError((error as any)?.message || 'Error inesperado del sistema.');
+  throw new DomainError(
+    error instanceof Error ? error.message : 'Error inesperado del sistema.'
+  );
 }
