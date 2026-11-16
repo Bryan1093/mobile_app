@@ -104,6 +104,15 @@ export const CitaCard: React.FC<CitaCardProps> = ({ cita, onCancelar, onReagenda
           <Text style={styles.infoLabel}>Modalidad:</Text>
           <Text style={styles.infoValueMuted}>Pago presencial en recepción</Text>
         </View>
+
+        {esProgramada && cita.estadoPago === 'PENDIENTE' && (
+          <View style={styles.pagoPendienteAviso}>
+            <MaterialIcons name="schedule" size={15} color={THEME.colors.warning} />
+            <Text style={styles.pagoPendienteText}>
+              Preséntate 15 min antes en recepción para pagar y activar tu cita.
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Botones inferiores requeridos por el diseño */}
@@ -210,6 +219,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: THEME.colors.textMuted,
     fontStyle: 'italic',
+  },
+  pagoPendienteAviso: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: THEME.colors.warningLight,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: THEME.borderRadius.sm,
+    marginTop: 2,
+  },
+  pagoPendienteText: {
+    flex: 1,
+    fontSize: 12,
+    color: THEME.colors.textPrimary,
+    fontWeight: '500',
+    lineHeight: 16,
   },
   actionsRow: {
     flexDirection: 'row',

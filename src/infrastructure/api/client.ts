@@ -91,6 +91,11 @@ apiClient.interceptors.request.use(
 
 // Lock compartido para evitar múltiples POST /auth/refresh simultáneos
 let refreshPromise: Promise<string | null> | null = null;
+let sessionExpiredListener: (() => void) | null = null;
+
+export function setOnSessionExpired(listener: (() => void) | null): void {
+  sessionExpiredListener = listener;
+}
 
 interface RetryableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
@@ -99,6 +104,7 @@ interface RetryableRequestConfig extends InternalAxiosRequestConfig {
 async function executeTokenRefresh(): Promise<string | null> {
   const rt = await getRefreshToken();
   if (!rt) {
+    await removeAuthToken();
     return null;
   }
 
@@ -163,6 +169,11 @@ apiClient.interceptors.response.use(
         }
         return apiClient(originalRequest);
       }
+
+      sessionExpiredListener?.();
+    } else if (status === 401 && originalRequest?._retry && !isAuthLifecycleEndpoint) {
+      await removeAuthToken();
+      sessionExpiredListener?.();
     }
 
     return Promise.reject(error);

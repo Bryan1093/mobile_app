@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -58,6 +58,12 @@ export const MisCitasScreen: React.FC = () => {
   const [tipoLista, setTipoLista] = useState<'PROXIMAS' | 'HISTORIAL'>('PROXIMAS');
   const [refreshing, setRefreshing] = useState(false);
 
+  useFocusEffect(
+    useCallback(() => {
+      void recargarDatos();
+    }, [recargarDatos])
+  );
+
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -78,6 +84,7 @@ export const MisCitasScreen: React.FC = () => {
   const handleAbrirLista = (tipo: 'PROXIMAS' | 'HISTORIAL') => {
     setTipoLista(tipo);
     setModalListaVisible(true);
+    void recargarDatos();
   };
 
   const handleReagendar = (cita: Cita) => {

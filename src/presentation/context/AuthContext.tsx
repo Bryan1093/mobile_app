@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { RegistroPacienteDTO, UsuarioPaciente } from '../../core/domain';
+import { setOnSessionExpired } from '../../infrastructure/api/client';
 import { authRepository } from '../../infrastructure/container';
 
 interface AuthContextType {
@@ -17,6 +18,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const queryClient = useQueryClient();
   const [usuario, setUsuario] = useState<UsuarioPaciente | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    setOnSessionExpired(() => {
+      queryClient.clear();
+      setUsuario(null);
+    });
+    return () => {
+      setOnSessionExpired(null);
+    };
+  }, [queryClient]);
 
   useEffect(() => {
     let isMounted = true;

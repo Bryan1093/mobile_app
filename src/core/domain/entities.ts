@@ -79,6 +79,17 @@ export type TipoDocumentoClinico =
 // Alias de retrocompatibilidad
 export type TipoDocumento = TipoDocumentoClinico;
 
+export interface EjercicioRutina {
+  orden: number;
+  nombre: string;
+  zona: string;
+  descripcion: string;
+  series: number;
+  repeticiones: number;
+  frecuencia: string;
+  notas: string | null;
+}
+
 export interface DocumentoClinico {
   id: string;
   pacienteId: string;
@@ -88,6 +99,9 @@ export interface DocumentoClinico {
   fechaEmision: string; // "YYYY-MM-DD"
   archivoUrl: string; // URL o URI al PDF
   tamano: string;
+  indicaciones?: string | null;
+  activa?: boolean;
+  ejercicios?: EjercicioRutina[];
 }
 
 // Alias de retrocompatibilidad

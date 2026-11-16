@@ -133,7 +133,7 @@ export const ConfirmarCitaScreen: React.FC = () => {
                 <Text style={styles.pagoPresencialTitle}>Pago Presencial en Recepción</Text>
               </View>
               <Text style={styles.pagoPresencialDesc}>
-                Sin pagos ni pasarelas electrónicas. Cancelas directamente el día de tu terapia al presentarte en Innova Fisioterapia (Tumbaco).
+                Sin pagos ni pasarelas electrónicas. Acércate 15 minutos antes de tu cita para cancelar en recepción, activar tu cita y poder ser atendido por el fisioterapeuta en Innova Fisioterapia (Tumbaco).
               </Text>
             </View>
           </View>

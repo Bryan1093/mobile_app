@@ -42,6 +42,8 @@ export const CuentaScreen: React.FC = () => {
   const { recargarDatos } = useAppointments();
   const [modalLOPDPVisible, setModalLOPDPVisible] = useState(false);
   const [modalSedeVisible, setModalSedeVisible] = useState(false);
+  const [modalLogoutVisible, setModalLogoutVisible] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [dataSource, setDataSourceState] = useState<DataSourceType>(container.dataSource);
 
   const edadTexto = calcularEdadTexto(usuario?.fechaNacimiento);
@@ -66,18 +68,17 @@ export const CuentaScreen: React.FC = () => {
   };
 
   const handleCerrarSesion = () => {
-    Alert.alert(
-      'Cerrar Sesión',
-      '¿Estás seguro de que deseas salir de tu cuenta?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Cerrar Sesión',
-          style: 'destructive',
-          onPress: () => logout(),
-        },
-      ]
-    );
+    setModalLogoutVisible(true);
+  };
+
+  const confirmarCerrarSesion = async () => {
+    setIsLoggingOut(true);
+    setModalLogoutVisible(false);
+    try {
+      await logout();
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const handleAbrirGoogleMaps = async () => {
@@ -288,8 +289,8 @@ export const CuentaScreen: React.FC = () => {
                 <MaterialIcons name="schedule" size={20} color="#1B6B53" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.infoRowTitle}>Horarios de Atención</Text>
-                  <Text style={styles.infoRowText}>Lunes a Viernes: 07:00 – 19:00</Text>
-                  <Text style={styles.infoRowText}>Sábados: 08:00 – 14:00</Text>
+                  <Text style={styles.infoRowText}>Lunes a Viernes: 07:00 – 20:00</Text>
+                  <Text style={styles.infoRowText}>Sábados: 08:00 – 17:00</Text>
                 </View>
               </View>
 
@@ -321,6 +322,53 @@ export const CuentaScreen: React.FC = () => {
             >
               <Text style={styles.btnCerrarModalSecundarioText}>Cerrar</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Confirmación Cerrar Sesión (multiplataforma: Web, iOS y Android) */}
+      <Modal
+        visible={modalLogoutVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!isLoggingOut) {
+            setModalLogoutVisible(false);
+          }
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalLogoutIconCircle}>
+                <MaterialIcons name="logout" size={20} color="#EF4444" />
+              </View>
+              <Text style={styles.modalHeaderTitle}>Cerrar Sesión</Text>
+            </View>
+
+            <Text style={styles.modalLogoutMessage}>
+              ¿Estás seguro de que deseas salir de tu cuenta?
+            </Text>
+
+            <View style={styles.modalLogoutActions}>
+              <TouchableOpacity
+                style={[styles.btnCerrarModalSecundario, styles.modalLogoutActionBtn]}
+                onPress={() => setModalLogoutVisible(false)}
+                disabled={isLoggingOut}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.btnCerrarModalSecundarioText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.btnConfirmLogout, styles.modalLogoutActionBtn]}
+                onPress={confirmarCerrarSesion}
+                disabled={isLoggingOut}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.btnConfirmLogoutText}>Cerrar Sesión</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -590,6 +638,39 @@ const styles = StyleSheet.create({
   btnCerrarModalSecundarioText: {
     color: '#64748B',
     fontWeight: '700',
+    fontSize: 13,
+  },
+  modalLogoutIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#FEE2E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalLogoutMessage: {
+    fontSize: 14,
+    color: '#475569',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  modalLogoutActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modalLogoutActionBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+  },
+  btnConfirmLogout: {
+    backgroundColor: '#EF4444',
+  },
+  btnConfirmLogoutText: {
+    color: '#FFFFFF',
+    fontWeight: '800',
     fontSize: 13,
   },
 });

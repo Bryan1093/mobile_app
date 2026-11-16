@@ -27,7 +27,6 @@ interface AppointmentContextType {
   cancelarCita: (citaId: string) => Promise<boolean>;
   marcarNotificacionesLeidas: () => void;
   agregarNotificacionInApp: (notif: Notificacion) => void;
-  agregarRegistroEVA: (nivel: number, zona: string, comentario: string) => void;
   contadorNotificacionesNoLeidas: number;
   recargarDatos: () => Promise<void>;
 }
@@ -193,22 +192,6 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
   };
 
-  const agregarRegistroEVA = async (nivelDolor: number, zonaAfectada: string, comentario: string) => {
-    if (!usuario) return;
-    try {
-      const nuevoReg = await clinicalRepository.agregarRegistroEva({
-        pacienteId: usuario.id,
-        fecha: new Date().toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' }),
-        nivelDolor,
-        zonaAfectada,
-        comentario,
-      });
-      setRegistrosEVA((prev) => [nuevoReg, ...prev]);
-    } catch (err) {
-      console.error('[AppointmentContext] Error agregando registro EVA:', err);
-    }
-  };
-
   return (
     <AppointmentContext.Provider
       value={{
@@ -223,7 +206,6 @@ export const AppointmentProvider: React.FC<{ children: React.ReactNode }> = ({ c
         cancelarCita,
         marcarNotificacionesLeidas,
         agregarNotificacionInApp,
-        agregarRegistroEVA,
         contadorNotificacionesNoLeidas: usuario ? contadorNotificacionesNoLeidas : 0,
         recargarDatos,
       }}

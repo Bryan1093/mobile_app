@@ -1,8 +1,8 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   Image,
   Platform,
@@ -31,7 +31,6 @@ export const InicioScreen: React.FC = () => {
     notificaciones,
     contadorNotificacionesNoLeidas,
     marcarNotificacionesLeidas,
-    agregarRegistroEVA,
     recargarDatos,
   } = useAppointments();
 
@@ -40,6 +39,12 @@ export const InicioScreen: React.FC = () => {
 
   // Próxima cita activa
   const proximaCita = citas.find((c) => c.estado === 'PROGRAMADA');
+
+  useFocusEffect(
+    useCallback(() => {
+      void recargarDatos();
+    }, [recargarDatos])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -194,17 +199,8 @@ export const InicioScreen: React.FC = () => {
           </PressableScale>
         </View>
 
-        {/* Componente Escala Visual Análoga (EVA) de dolor con respuesta háptica e interpolación */}
-        <EvaScaleCard
-          registros={registrosEVA}
-          onRegistrarDolor={(nivel) =>
-            agregarRegistroEVA(
-              nivel,
-              'Evaluación ambulatoria',
-              'Registro interactivo por escala EVA en app'
-            )
-          }
-        />
+        {/* Componente Escala Visual Análoga (EVA) de dolor (solo lectura) */}
+        <EvaScaleCard registros={registrosEVA} />
 
         {/* Información de la Sede Innova Fisioterapia */}
         <View style={styles.sedeCard}>
@@ -216,7 +212,7 @@ export const InicioScreen: React.FC = () => {
             📍 Manuela Garaycoa y Norberto Salazar, Tumbaco 🇪🇨
           </Text>
           <Text style={styles.sedeInfo}>
-            🕒 Lunes a Viernes: 07:00 a 19:00 | Sábados: 08:00 a 14:00
+            🕒 Lunes a Viernes: 07:00 a 20:00 | Sábados: 08:00 a 17:00
           </Text>
           <Text style={styles.sedeNota}>
             Control concurrente de citas y custodia de datos de salud conforme a la Ley Orgánica de Protección de Datos Personales (LOPDP).

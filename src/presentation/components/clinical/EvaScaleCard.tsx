@@ -1,32 +1,62 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Animated,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { THEME } from '../../theme/theme';
 import { RegistroEVA } from '../../../shared/types';
-import { triggerHaptic } from '../../../shared/utils/haptics';
 
 interface EvaScaleCardProps {
   registros: RegistroEVA[];
-  onRegistrarDolor?: (nivel: number) => void;
 }
 
-export const EvaScaleCard: React.FC<EvaScaleCardProps> = ({
-  registros,
-  onRegistrarDolor,
-}) => {
-  const [seleccionado, setSeleccionado] = useState<number>(registros[0]?.nivelDolor ?? 3);
-  const ultimoRegistro = registros[0];
+const parseFechaMs = (fecha: string): number => {
+  const parsed = Date.parse(fecha);
+  if (!Number.isNaN(parsed)) return parsed;
+  const dmy = fecha.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dmy) {
+    return new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1])).getTime();
+  }
+  return 0;
+};
 
-  // Animaciones nativas y de interpolación de color con inicialización React 19
-  const [animatedLevel] = useState(() => new Animated.Value(registros[0]?.nivelDolor ?? 3));
-  const [badgeScale] = useState(() => new Animated.Value(1));
-  const [textOpacity] = useState(() => new Animated.Value(1));
+const formatearFechaEva = (fecha: string): string => {
+  if (!fecha) return '';
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(fecha.trim())) {
+    return fecha.trim();
+  }
+  const date = new Date(fecha);
+  if (Number.isNaN(date.getTime())) {
+    return fecha;
+  }
+  const dia = String(date.getDate()).padStart(2, '0');
+  const mes = String(date.getMonth() + 1).padStart(2, '0');
+  const anio = date.getFullYear();
+  return `${dia}/${mes}/${anio}`;
+};
+
+export const EvaScaleCard: React.FC<EvaScaleCardProps> = ({ registros }) => {
+  const registrosOrdenados = useMemo(
+    () => [...registros].sort((a, b) => parseFechaMs(b.fecha) - parseFechaMs(a.fecha)),
+    [registros]
+  );
+
+  const ultimoRegistro = registrosOrdenados[0];
+  const nivelActual = ultimoRegistro?.nivelDolor ?? 0;
+
+  // Animación de nivel e interpolación de color con inicialización React 19
+  const [animatedLevel] = useState(() => new Animated.Value(nivelActual));
+
+  useEffect(() => {
+    Animated.timing(animatedLevel, {
+      toValue: nivelActual,
+      duration: 250,
+      useNativeDriver: false,
+    }).start();
+  }, [nivelActual, animatedLevel]);
 
   // Interpolación de color suave: verde esmeralda -> verde claro -> ámbar -> naranja -> rojo clínico
   const animatedBgColor = animatedLevel.interpolate({
@@ -63,49 +93,6 @@ export const EvaScaleCard: React.FC<EvaScaleCardProps> = ({
     return 'Dolor incapacitante';
   };
 
-  const handleSeleccionar = (num: number) => {
-    if (num === seleccionado) return;
-    setSeleccionado(num);
-    triggerHaptic('selection');
-    onRegistrarDolor?.(num);
-
-    // Micro-animación de fade en el texto descriptivo
-    Animated.sequence([
-      Animated.timing(textOpacity, {
-        toValue: 0.35,
-        duration: 60,
-        useNativeDriver: true,
-      }),
-      Animated.timing(textOpacity, {
-        toValue: 1,
-        duration: 160,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Micro-animación de escala táctil en el badge numérico (60 FPS nativo)
-    Animated.sequence([
-      Animated.timing(badgeScale, {
-        toValue: 1.15,
-        duration: 80,
-        useNativeDriver: true,
-      }),
-      Animated.spring(badgeScale, {
-        toValue: 1,
-        friction: 5,
-        tension: 80,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Interpolación continua y suave del color y del indicador de escala
-    Animated.timing(animatedLevel, {
-      toValue: num,
-      duration: 250,
-      useNativeDriver: false,
-    }).start();
-  };
-
   return (
     <View style={styles.card}>
       {/* Cabecera del Componente */}
@@ -121,31 +108,48 @@ export const EvaScaleCard: React.FC<EvaScaleCardProps> = ({
         </View>
       </View>
 
-      {/* Indicador numérico animado con interpolación de color y bounce */}
+      <View style={styles.readOnlyBadge}>
+        <MaterialIcons name="lock-outline" size={12} color={THEME.colors.textSecondary} />
+        <Text style={styles.readOnlyBadgeText}>
+          Solo lectura · Registrado en consulta clínica
+        </Text>
+      </View>
+
+      {/* Indicador numérico con interpolación de color clínico */}
       <View style={styles.scoreRow}>
         <Animated.View
           style={[
             styles.scoreBadge,
             {
-              backgroundColor: animatedBgColor,
-              transform: [{ scale: badgeScale }],
+              backgroundColor: ultimoRegistro ? animatedBgColor : THEME.colors.textMuted,
             },
           ]}
         >
-          <Text style={styles.scoreText}>{seleccionado}</Text>
+          <Text style={styles.scoreText}>{ultimoRegistro ? nivelActual : '--'}</Text>
           <Text style={styles.scoreMax}>/10</Text>
         </Animated.View>
 
-        <Animated.View style={[styles.scoreDescription, { opacity: textOpacity }]}>
-          <Text style={[styles.scoreStatus, { color: getColorPorNivel(seleccionado) }]}>
-            {getTextoDolor(seleccionado)}
-          </Text>
-          {ultimoRegistro && (
-            <Text style={styles.ultimoRegistroText}>
-              Último control: {ultimoRegistro.fecha} • {ultimoRegistro.zonaAfectada}
-            </Text>
+        <View style={styles.scoreDescription}>
+          {ultimoRegistro ? (
+            <>
+              <Text style={[styles.scoreStatus, { color: getColorPorNivel(nivelActual) }]}>
+                {getTextoDolor(nivelActual)}
+              </Text>
+              <Text style={styles.ultimoRegistroText}>
+                Último control: {formatearFechaEva(ultimoRegistro.fecha)} • {ultimoRegistro.zonaAfectada}
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={[styles.scoreStatus, { color: THEME.colors.textSecondary }]}>
+                Sin evaluaciones registradas
+              </Text>
+              <Text style={styles.ultimoRegistroText}>
+                Tu fisioterapeuta registrará tu puntaje EVA en consulta
+              </Text>
+            </>
           )}
-        </Animated.View>
+        </View>
       </View>
 
       {/* Barra analógica visual del espectro continuo EVA con cursor animado */}
@@ -175,13 +179,13 @@ export const EvaScaleCard: React.FC<EvaScaleCardProps> = ({
         <Text style={styles.spectrumLabelText}>10 Máximo</Text>
       </View>
 
-      {/* Selector interactivo de 0 a 10 con botones táctiles */}
-      <View style={styles.scaleContainer}>
+      {/* Marcadores visuales de solo lectura de 0 a 10 */}
+      <View style={styles.scaleContainer} accessibilityRole="text">
         {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
-          const isActivo = seleccionado === num;
+          const isActivo = ultimoRegistro ? ultimoRegistro.nivelDolor === num : false;
           const bg = getColorPorNivel(num);
           return (
-            <TouchableOpacity
+            <View
               key={num}
               style={[
                 styles.scaleButton,
@@ -192,13 +196,11 @@ export const EvaScaleCard: React.FC<EvaScaleCardProps> = ({
                   ...THEME.shadows.card,
                 },
               ]}
-              onPress={() => handleSeleccionar(num)}
-              activeOpacity={0.7}
             >
               <Text style={[styles.scaleButtonText, isActivo && styles.scaleButtonTextActive]}>
                 {num}
               </Text>
-            </TouchableOpacity>
+            </View>
           );
         })}
       </View>
@@ -206,9 +208,11 @@ export const EvaScaleCard: React.FC<EvaScaleCardProps> = ({
       {/* Historial de sesiones clínicas */}
       <View style={styles.historyContainer}>
         <Text style={styles.historyTitle}>Registro en historias clínicas:</Text>
-        {registros.slice(0, 3).map((r) => (
+        {registrosOrdenados.slice(0, 3).map((r) => (
           <View key={r.id} style={styles.historyItem}>
-            <Text style={styles.historyDate}>{r.fecha}</Text>
+            <Text style={styles.historyDate} numberOfLines={1}>
+              {formatearFechaEva(r.fecha)}
+            </Text>
             <View style={[styles.miniBadge, { backgroundColor: getColorPorNivel(r.nivelDolor) }]}>
               <Text style={styles.miniBadgeText}>EVA {r.nivelDolor}/10</Text>
             </View>
@@ -258,6 +262,24 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: THEME.colors.textSecondary,
     marginTop: 2,
+  },
+  readOnlyBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: THEME.colors.background,
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginBottom: 4,
+  },
+  readOnlyBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: THEME.colors.textSecondary,
   },
   scoreRow: {
     flexDirection: 'row',

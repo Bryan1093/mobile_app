@@ -22,17 +22,6 @@ export function useHistorialEva() {
   });
 }
 
-export function useAgregarRegistroEva() {
-  const queryClient = useQueryClient();
-
-  return useMutation<RegistroEva, Error, Omit<RegistroEva, 'id'>>({
-    mutationFn: (registro) => clinicalRepository.agregarRegistroEva(registro),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: CLINICAL_KEYS.eva });
-    },
-  });
-}
-
 export function useDocumentos() {
   const { usuario } = useAuth();
   return useQuery<DocumentoClinico[]>({

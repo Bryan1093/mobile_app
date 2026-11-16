@@ -7,10 +7,28 @@ import { DocumentoMedico } from '../../../shared/types';
 
 interface DocumentoCardProps {
   documento: DocumentoMedico;
+  onPress?: (documento: DocumentoMedico) => void;
 }
 
-export const DocumentoCard: React.FC<DocumentoCardProps> = ({ documento }) => {
+export const DocumentoCard: React.FC<DocumentoCardProps> = ({ documento, onPress }) => {
   const [cargando, setCargando] = useState(false);
+
+  const tieneEjercicios = Boolean(documento.ejercicios && documento.ejercicios.length > 0);
+  const tieneArchivoUrl = /^https?:\/\//i.test(documento.archivoUrl?.trim() ?? '');
+
+  const getResumenClinico = (): string | null => {
+    if (documento.ejercicios && documento.ejercicios.length > 0) {
+      const frecuencias = Array.from(
+        new Set(documento.ejercicios.map((e) => e.frecuencia).filter(Boolean))
+      );
+      const countLabel = `${documento.ejercicios.length} ejercicio${
+        documento.ejercicios.length === 1 ? '' : 's'
+      }`;
+      const freqLabel = frecuencias.length > 0 ? ` · ${frecuencias.join(', ')}` : '';
+      return `${countLabel}${freqLabel}`;
+    }
+    return documento.indicaciones?.trim() || null;
+  };
 
   const getTipoBadge = () => {
     switch (documento.tipo) {
@@ -26,9 +44,21 @@ export const DocumentoCard: React.FC<DocumentoCardProps> = ({ documento }) => {
   };
 
   const handleDescargarOVer = async () => {
+    if (onPress) {
+      onPress(documento);
+      return;
+    }
+    if (!tieneArchivoUrl) {
+      Alert.alert(
+        'Archivo no disponible',
+        tieneEjercicios
+          ? 'Esta rutina no tiene un PDF externo adjunto. Ábrela desde la sección Tratamientos para ver sus ejercicios.'
+          : 'El archivo PDF aún no está disponible.'
+      );
+      return;
+    }
     try {
       setCargando(true);
-      // Abre el PDF en el visor nativo / navegador seguro
       await WebBrowser.openBrowserAsync(documento.archivoUrl);
     } catch {
       Alert.alert('Error', 'No se pudo abrir el documento PDF.');
@@ -38,6 +68,8 @@ export const DocumentoCard: React.FC<DocumentoCardProps> = ({ documento }) => {
   };
 
   const badge = getTipoBadge();
+  const resumenClinico = getResumenClinico();
+  const mostrarBotonRutina = !tieneArchivoUrl && tieneEjercicios;
 
   return (
     <TouchableOpacity
@@ -46,7 +78,11 @@ export const DocumentoCard: React.FC<DocumentoCardProps> = ({ documento }) => {
       activeOpacity={0.7}
     >
       <View style={styles.iconContainer}>
-        <MaterialIcons name="picture-as-pdf" size={32} color={THEME.colors.primary} />
+        <MaterialIcons
+          name={tieneEjercicios ? 'fitness-center' : 'picture-as-pdf'}
+          size={28}
+          color={THEME.colors.primary}
+        />
       </View>
 
       <View style={styles.infoContainer}>
@@ -63,6 +99,18 @@ export const DocumentoCard: React.FC<DocumentoCardProps> = ({ documento }) => {
           Prescrito por: {documento.fisioterapeutaNombre}
         </Text>
 
+        {resumenClinico ? (
+          <Text style={styles.resumenClinico} numberOfLines={1}>
+            {resumenClinico}
+          </Text>
+        ) : null}
+
+        {documento.indicaciones ? (
+          <Text style={styles.indicacionesPreview} numberOfLines={2}>
+            {documento.indicaciones}
+          </Text>
+        ) : null}
+
         <View style={styles.metaRow}>
           <Text style={styles.metaText}>Fecha: {documento.fechaEmision}</Text>
           <Text style={styles.metaBullet}>•</Text>
@@ -73,6 +121,11 @@ export const DocumentoCard: React.FC<DocumentoCardProps> = ({ documento }) => {
       <View style={styles.actionContainer}>
         {cargando ? (
           <ActivityIndicator size="small" color={THEME.colors.primary} />
+        ) : mostrarBotonRutina ? (
+          <View style={styles.rutinaButton}>
+            <MaterialIcons name="visibility" size={15} color="#FFFFFF" />
+            <Text style={styles.rutinaButtonText}>Ver rutina / PDF</Text>
+          </View>
         ) : (
           <View style={styles.downloadButton}>
             <MaterialIcons name="file-download" size={22} color="#FFFFFF" />
@@ -130,6 +183,18 @@ const styles = StyleSheet.create({
     color: THEME.colors.textSecondary,
     marginBottom: 4,
   },
+  resumenClinico: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: THEME.colors.primaryDark,
+    marginBottom: 3,
+  },
+  indicacionesPreview: {
+    fontSize: 12,
+    color: THEME.colors.textSecondary,
+    fontStyle: 'italic',
+    marginBottom: 4,
+  },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -153,6 +218,20 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  rutinaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: THEME.colors.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  rutinaButtonText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 });
 

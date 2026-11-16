@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressableScale } from '../../components/common/PressableScale';
+import { RutinaDetalleModal } from '../../components/modals/RutinaDetalleModal';
 import { THEME } from '../../theme/theme';
 import { useAppointments } from '../../context/AppointmentContext';
 import { useAuth } from '../../context/AuthContext';
@@ -28,6 +29,7 @@ export const MisDocumentosScreen: React.FC = () => {
 
   // Filtro exacto para la tesis: 'TODOS' | 'RUTINAS' | 'RECETAS'
   const [filtroActivo, setFiltroActivo] = useState<'TODOS' | 'RUTINAS' | 'RECETAS'>('TODOS');
+  const [rutinaSeleccionada, setRutinaSeleccionada] = useState<DocumentoMedico | null>(null);
 
   const documentosFiltrados = documentos.filter((doc) => {
     if (filtroActivo === 'TODOS') return true;
@@ -37,6 +39,20 @@ export const MisDocumentosScreen: React.FC = () => {
   });
 
   const handleAbrirPDF = async (doc: DocumentoMedico) => {
+    if (doc.ejercicios && doc.ejercicios.length > 0) {
+      setRutinaSeleccionada(doc);
+      return;
+    }
+
+    const tieneUrlReal = /^https?:\/\//i.test(doc.archivoUrl?.trim() ?? '');
+    if (!tieneUrlReal) {
+      Alert.alert(
+        'Archivo no disponible',
+        'El archivo PDF de este documento aún no está disponible.'
+      );
+      return;
+    }
+
     try {
       await WebBrowser.openBrowserAsync(doc.archivoUrl);
     } catch {
@@ -125,6 +141,16 @@ export const MisDocumentosScreen: React.FC = () => {
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => {
           const esRutina = item.tipo === 'RUTINA_EJERCICIOS' || item.tipo === 'RECOMENDACION_POSTURAL';
+          const tieneEjercicios = Boolean(item.ejercicios && item.ejercicios.length > 0);
+          const tieneUrlReal = /^https?:\/\//i.test(item.archivoUrl?.trim() ?? '');
+          const frecuencias = tieneEjercicios
+            ? Array.from(new Set(item.ejercicios!.map((e) => e.frecuencia).filter(Boolean)))
+            : [];
+          const resumenRutina = tieneEjercicios
+            ? `${item.ejercicios!.length} ejercicio${item.ejercicios!.length === 1 ? '' : 's'}${
+                frecuencias.length > 0 ? ` · ${frecuencias.join(', ')}` : ''
+              }`
+            : null;
 
           return (
             <View style={styles.cardDocumento}>
@@ -170,13 +196,36 @@ export const MisDocumentosScreen: React.FC = () => {
                 </Text>
               </View>
 
+              {resumenRutina ? (
+                <View style={styles.docMetaRow}>
+                  <MaterialIcons name="repeat" size={15} color="#1B6B53" />
+                  <Text style={styles.docResumenText}>{resumenRutina}</Text>
+                </View>
+              ) : null}
+
+              {item.indicaciones ? (
+                <View style={styles.indicacionesPreviewBox}>
+                  <Text style={styles.indicacionesPreviewText} numberOfLines={2}>
+                    {item.indicaciones}
+                  </Text>
+                </View>
+              ) : null}
+
               <View style={styles.cardDivider} />
 
-              {/* Botón para ver y descargar el PDF */}
+              {/* Botón para ver rutina o descargar el PDF */}
               <View style={styles.actionRow}>
                 <View style={styles.tamanoBadge}>
-                  <MaterialIcons name="picture-as-pdf" size={16} color="#DC2626" />
-                  <Text style={styles.tamanoText}>Formato PDF ({item.tamano})</Text>
+                  <MaterialIcons
+                    name={tieneEjercicios && !tieneUrlReal ? 'fitness-center' : 'picture-as-pdf'}
+                    size={16}
+                    color={tieneEjercicios && !tieneUrlReal ? '#1B6B53' : '#DC2626'}
+                  />
+                  <Text style={styles.tamanoText}>
+                    {tieneEjercicios && !tieneUrlReal
+                      ? `Rutina (${item.tamano})`
+                      : `Formato PDF (${item.tamano})`}
+                  </Text>
                 </View>
 
                 <PressableScale
@@ -185,8 +234,14 @@ export const MisDocumentosScreen: React.FC = () => {
                   style={styles.btnVerPdfWrapper}
                 >
                   <View style={styles.btnVerPdf}>
-                    <MaterialIcons name="file-download" size={16} color="#FFFFFF" />
-                    <Text style={styles.btnVerPdfText}>Ver PDF</Text>
+                    <MaterialIcons
+                      name={tieneEjercicios ? 'visibility' : 'file-download'}
+                      size={16}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.btnVerPdfText}>
+                      {tieneEjercicios ? 'Ver rutina / PDF' : 'Ver PDF'}
+                    </Text>
                   </View>
                 </PressableScale>
               </View>
@@ -202,6 +257,13 @@ export const MisDocumentosScreen: React.FC = () => {
             </Text>
           </View>
         }
+      />
+
+      <RutinaDetalleModal
+        visible={Boolean(rutinaSeleccionada)}
+        documento={rutinaSeleccionada}
+        pacienteNombre={usuario ? `${usuario.nombres} ${usuario.apellidos}`.trim() : undefined}
+        onClose={() => setRutinaSeleccionada(null)}
       />
     </SafeAreaView>
   );
@@ -327,6 +389,25 @@ const styles = StyleSheet.create({
   docBold: {
     fontWeight: '700',
     color: '#0F2820',
+  },
+  docResumenText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1B6B53',
+  },
+  indicacionesPreviewBox: {
+    marginTop: 6,
+    backgroundColor: '#E8F5F1',
+    borderLeftWidth: 3,
+    borderLeftColor: '#1B6B53',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  indicacionesPreviewText: {
+    fontSize: 12,
+    color: '#0F2820',
+    lineHeight: 17,
   },
   cardDivider: {
     height: 1,

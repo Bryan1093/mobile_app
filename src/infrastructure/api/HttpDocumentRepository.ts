@@ -8,7 +8,25 @@ export class HttpDocumentRepository implements IDocumentRepository {
   async getDocumentos(): Promise<DocumentoClinico[]> {
     try {
       const response = await apiClient.get<DocumentoClinico[]>('/me/documentos');
-      return Array.isArray(response.data) ? response.data : [];
+      if (!Array.isArray(response.data)) return [];
+      return response.data.map((doc) => ({
+        ...doc,
+        archivoUrl: doc.archivoUrl ?? '',
+        indicaciones: doc.indicaciones ?? null,
+        activa: doc.activa,
+        ejercicios: Array.isArray(doc.ejercicios)
+          ? doc.ejercicios.map((ej) => ({
+              orden: ej.orden,
+              nombre: ej.nombre,
+              zona: ej.zona,
+              descripcion: ej.descripcion,
+              series: ej.series,
+              repeticiones: ej.repeticiones,
+              frecuencia: ej.frecuencia,
+              notas: ej.notas ?? null,
+            }))
+          : undefined,
+      }));
     } catch (error) {
       if (isAxiosError(error) && (error.response?.status === 404 || error.response?.status === 401)) {
         if (__DEV__) {
